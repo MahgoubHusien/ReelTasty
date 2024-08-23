@@ -7,6 +7,9 @@
 logs
 *.log
 
+.history
+.vscode
+
 # OS generated files
 .DS_Store
 Thumbs.db
