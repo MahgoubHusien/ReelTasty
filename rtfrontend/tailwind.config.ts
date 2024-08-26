@@ -1,80 +1,101 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
 
-const config = {
+const config: Config = {
   darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
-	],
-  prefix: "",
+  ],
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1280px",
       },
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Background and Foreground
+        background: {
+          DEFAULT: "#F7F7F7", // Light mode: Very light gray
+          dark: "#121212", // Dark mode: Deep black with a touch of gray
+        },
+        foreground: {
+          DEFAULT: "#333333", // Light mode: Dark gray for text
+          dark: "#EDEDED", // Dark mode: Light gray for text
+        },
+        // Primary Colors
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#1A73E8", // A modern blue for light mode
+          dark: "#8AB4F8", // A lighter blue for dark mode
         },
+        // Secondary Colors
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "#34A853", // Light mode: Green for success/secondary actions
+          dark: "#81C995", // Dark mode: Muted green
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
+        // Accent Colors
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#FBBC05", // Light mode: Yellow accent
+          dark: "#FDD663", // Dark mode: Softer yellow accent
         },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+        // Muted Colors
+        muted: {
+          DEFAULT: "#E0E0E0", // Light mode: Muted gray
+          dark: "#3A3A3A", // Dark mode: Dark muted gray
         },
+        // Card Backgrounds
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "#FFFFFF", // Light mode: Pure white card background
+          dark: "#1E1E1E", // Dark mode: Dark gray card background
+        },
+        // Border Colors
+        border: {
+          DEFAULT: "#E0E0E0", // Light mode: Light gray border
+          dark: "#333333", // Dark mode: Dark gray border
+        },
+        // Input Backgrounds
+        input: {
+          DEFAULT: "#F5F5F5", // Light mode: Very light gray input background
+          dark: "#2C2C2C", // Dark mode: Dark input background
+        },
+        // Ring Colors (for focus states)
+        ring: {
+          DEFAULT: "#1A73E8", // Light mode: Blue ring color
+          dark: "#8AB4F8", // Dark mode: Lighter blue ring color
+        },
+        // Popover Colors
+        popover: {
+          DEFAULT: "#FFFFFF", // Light mode: White popover background
+          dark: "#1E1E1E", // Dark mode: Dark gray popover background
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        xl: "1rem",
+        lg: "0.75rem",
+        md: "0.5rem",
+        sm: "0.375rem",
       },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.5s ease-in-out",
+        "fade-out": "fade-out 0.5s ease-in-out",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
+};
 
-export default config
+export default config;
