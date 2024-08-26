@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { animate, stagger } from 'framer-motion';
-import { FaBars } from 'react-icons/fa'; 
-import userProfilePic from '/public/major.png'; // Replace with the actual path to the profile picture
-import ToggleSwitch from "@/components/ui/themeswitcher"; // Import the ToggleSwitch component
+import { FaBars } from 'react-icons/fa';
+import userProfilePic from '/public/major.png';
+import ToggleSwitch from "@/components/ui/themeswitcher";
 
 interface NavbarProps {
   isLoggedIn?: boolean;
@@ -12,8 +12,8 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({
-  isLoggedIn = false, // Default to not logged in
-  currentPage = "home", // Default to "home" page
+  isLoggedIn = false,
+  currentPage = "home",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,25 +42,38 @@ const Navbar: React.FC<NavbarProps> = ({
   }, [isOpen]);
 
   const navItemStyle = (page: string) => ({
-    color: currentPage === page ? 'rgb(153, 102, 255)' : 'white',
+    color: 'white',
     fontFamily: "'Poppins', sans-serif",
+    fontWeight: 'bold',
+    fontSize: '0.875rem', // Smaller font size for all nav items
     transition: 'all 0.3s ease-in-out',
-    borderBottom: 'none', // No underline for dropdown menu items
+    borderBottom: currentPage === page ? '2px solid white' : 'none',
   });
 
   return (
     <nav
-      className={`fixed top-0 left-0 w-full z-50 backdrop-blur-md transition-all duration-300 ${
-        isScrolled ? 'bg-black bg-opacity-80' : 'bg-transparent'
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        isScrolled ? 'bg-black bg-opacity-70 shadow-lg' : 'bg-transparent'
       } ${!isVisible ? '-top-20' : 'top-0'}`}
       style={{ fontFamily: "'Poppins', sans-serif" }}
     >
       <div className="flex items-center justify-between px-8 py-4">
         <div className="flex items-center space-x-4">
-          <div className="nav-item text-xl font-bold" style={{ color: 'white' }}>
+          <a
+            href="#home"
+            className="nav-item transition-colors px-4 py-2 text-xl font-bold"
+            style={{
+              color: 'white',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 'bold',
+              fontSize: '1.25rem', // Larger font size for Reel Tasty
+              textDecoration: 'none',
+              borderBottom: 'none', // No underline for Reel Tasty
+            }}
+          >
             Reel Tasty
-          </div>
-          <ToggleSwitch /> {/* Place ToggleSwitch button next to Reel Tasty */}
+          </a>
+          <ToggleSwitch />
         </div>
         <div className="flex-grow"></div>
         <div className="hidden md:flex space-x-6 items-center">
@@ -71,7 +84,20 @@ const Navbar: React.FC<NavbarProps> = ({
           {isLoggedIn ? (
             <img src={userProfilePic as unknown as string} alt="User Profile" className="w-10 h-10 rounded-full object-cover" />
           ) : (
-            <a href="#login" className="nav-item transition-colors px-4 py-2 rounded-full" style={{ backgroundColor: 'rgb(153, 102, 255)', color: 'white', fontFamily: "'Poppins', sans-serif" }}>Login</a>
+            <a
+              href="#login"
+              className="relative inline-flex h-8 px-4 py-2 items-center justify-center overflow-hidden rounded-lg transition-transform transform hover:scale-105"
+              style={{
+                backgroundColor: '#357ABD', // Custom blue color
+                color: 'white',
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 'bold', // Match the Home tab font
+                fontSize: '0.875rem', // Match the Home tab font size
+                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow for modern effect
+              }}
+            >
+              Login
+            </a>
           )}
         </div>
         <div className="md:hidden flex items-center space-x-4">
@@ -79,12 +105,12 @@ const Navbar: React.FC<NavbarProps> = ({
             <img src={userProfilePic as unknown as string} alt="User Profile" className="w-8 h-8 rounded-full object-cover" />
           )}
           <button onClick={toggleMenu} className="text-white focus:outline-none">
-            <FaBars size={24} /> {/* Menu icon */}
+            <FaBars size={24} />
           </button>
         </div>
       </div>
       {isOpen && (
-        <div className="absolute top-full left-0 w-full bg-zinc-900 text-white flex flex-col items-center md:hidden pb-4">
+        <div className="absolute top-full left-0 w-full bg-black bg-opacity-90 text-white flex flex-col items-center md:hidden pb-4">
           <a href="#home" className="nav-item py-4 w-full text-center" style={navItemStyle('home')} onClick={toggleMenu}>Home</a>
           <a href="#video-submission" className="nav-item py-4 w-full text-center" style={navItemStyle('video-submission')} onClick={toggleMenu}>Recipe Generation</a>
           <a href="#trending-foods" className="nav-item py-4 w-full text-center" style={navItemStyle('trending-foods')} onClick={toggleMenu}>Trending Foods</a>
@@ -94,7 +120,22 @@ const Navbar: React.FC<NavbarProps> = ({
               <img src={userProfilePic as unknown as string} alt="User Profile" className="w-8 h-8 rounded-full object-cover mx-auto" />
             </a>
           ) : (
-            <a href="#login" className="nav-item py-4 pb-6 mt-4 text-center transition-colors rounded-full inline-block" style={{ backgroundColor: 'rgb(153, 102, 255)', color: 'white', width: 'auto', padding: '8px 16px', fontFamily: "'Poppins', sans-serif", marginBottom: '12px' }} onClick={toggleMenu}>Login</a>
+            <a
+              href="#login"
+              className="relative inline-flex h-8 px-4 py-2 items-center justify-center overflow-hidden rounded-lg transition-transform transform hover:scale-105"
+              style={{
+                backgroundColor: '#357ABD', // Custom blue color
+                color: 'white',
+                fontFamily: "'Poppins', sans-serif",
+                fontWeight: 'bold', // Match the Home tab font
+                fontSize: '0.875rem', // Match the Home tab font size
+                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', // Subtle shadow for modern effect
+                marginBottom: '12px',
+              }}
+              onClick={toggleMenu}
+            >
+              Login
+            </a>
           )}
         </div>
       )}
