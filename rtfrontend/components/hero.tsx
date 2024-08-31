@@ -6,6 +6,7 @@ import CoolButton from "./ui/button";
 import { FaLocationArrow } from "react-icons/fa";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
 import { AnimatedBeamMultipleOutputDemo } from "./magicui/animateBeamMultiple";
+import Link from "next/link";
 
 const Hero: React.FC = () => {
   useEffect(() => {
@@ -40,9 +41,9 @@ const Hero: React.FC = () => {
 
           {/* Call to Action */}
           <div className="flex justify-center md:justify-start">
-            <a href="#">
+            <Link href="/auth">
               <CoolButton title="Explore Recipes" icon={<FaLocationArrow />} position="right" />
-            </a>
+            </Link>
           </div>
         </div>
 

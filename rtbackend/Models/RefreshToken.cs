@@ -1,4 +1,10 @@
-public class RefreshTokenModel
+using System.ComponentModel.DataAnnotations;
+
+namespace rtbackend.Models
 {
-    public string Token { get; set; }
+    public class RefreshToken
+    {
+        [Required]
+        public string Token { get; set; } = string.Empty;
+    }
 }

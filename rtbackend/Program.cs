@@ -1,9 +1,11 @@
+using Amazon.S3;
+using Amazon.S3.Transfer;
 using dotenv.net;
 using rtbackend.Data;
 using rtbackend.Models;
+using rtbackend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -11,19 +13,26 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Generate a random secret key for JWT
-byte[] secretBytes = new byte[64];
-using (var rng = RandomNumberGenerator.Create())
-{
-    rng.GetBytes(secretBytes);
-}
-
-string secret = Convert.ToBase64String(secretBytes);
-
 // Load environment variables from .env file
 DotEnv.Load();
 
-// Add services to the container.
+// Get the JWT secret key from the environment variables
+string secret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+    ?? throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
+Console.WriteLine("JWT Secret loaded successfully.");
+
+// Set up CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", policyBuilder =>
+    {
+        policyBuilder.AllowAnyOrigin()
+                     .AllowAnyHeader()
+                     .AllowAnyMethod();
+    });
+});
+
+// Add services to the container
 var connectionString = $"Host={Environment.GetEnvironmentVariable("DB_HOST")};" +
                       $"Port={Environment.GetEnvironmentVariable("DB_PORT")};" +
                       $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
@@ -33,8 +42,43 @@ var connectionString = $"Host={Environment.GetEnvironmentVariable("DB_HOST")};" 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.AddIdentity<User, IdentityRole>(options => 
+// SMTP settings
+var smtpSettings = new SmtpSettings
 {
+    Server = Environment.GetEnvironmentVariable("SMTP_SERVER"),
+    Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "25"),
+    SenderName = Environment.GetEnvironmentVariable("SMTP_SENDER_NAME"),
+    SenderEmail = Environment.GetEnvironmentVariable("SMTP_SENDER_EMAIL"),
+    Username = Environment.GetEnvironmentVariable("SMTP_USERNAME"),
+    Password = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
+    UseSsl = bool.Parse(Environment.GetEnvironmentVariable("SMTP_USE_SSL") ?? "true")
+};
+Console.WriteLine($"SMTP Server: {smtpSettings.Server}");
+Console.WriteLine($"SMTP Port: {smtpSettings.Port}");
+Console.WriteLine($"SMTP Sender Name: {smtpSettings.SenderName}");
+Console.WriteLine($"SMTP Sender Email: {smtpSettings.SenderEmail}");
+Console.WriteLine($"SMTP Username: {smtpSettings.Username}");
+Console.WriteLine($"SMTP Use SSL: {smtpSettings.UseSsl}");
+
+builder.Services.AddSingleton(smtpSettings);
+
+// AWS S3 settings
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var config = new AmazonS3Config
+    {
+        RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION")),
+    };
+    return new AmazonS3Client(
+        Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID"),
+        Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY"),
+        config
+    );
+});
+
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    options.User.RequireUniqueEmail = true;
     options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireDigit = false;
@@ -44,6 +88,8 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
 })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -58,13 +104,19 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "YourIssuer",
+            ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
+            ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
         };
     });
 
 builder.Services.AddAuthorization();
 
+// Register TikAPI Service and S3 Upload Service
+builder.Services.AddHttpClient<TikApi>();
+builder.Services.AddSingleton<S3Service>();
+
+// Add Controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -74,19 +126,22 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => 
+    app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
     });
 }
 
-app.UseHttpsRedirection();
+// Uncomment if you have HTTPS configured
+// app.UseHttpsRedirection();
 
 app.UseRouting();
+
+app.UseCors("AllowAllOrigins");
 
 app.UseAuthentication();
 app.UseAuthorization();
