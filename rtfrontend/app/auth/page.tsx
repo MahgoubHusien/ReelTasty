@@ -65,7 +65,6 @@ const AuthPage: React.FC = () => {
         localStorage.setItem("authToken", data.token);
       }
 
-      // Redirect to home page
       router.push("/home");
     } catch (error) {
       if (error instanceof Error) {
