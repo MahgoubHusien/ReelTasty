@@ -2,6 +2,7 @@
   "name": "rtfrontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,27 +10,33 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.637.0",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/material": "^5.16.7",
     "@nextui-org/react": "^2.4.6",
+    "aws-sdk": "^2.1687.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
     "framer-motion": "^11.3.30",
     "lucide-react": "^0.436.0",
     "mini-svg-data-uri": "^1.4.4",
     "next": "14.2.6",
     "next-themes": "^0.3.0",
+    "pg": "^8.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.3.0",
     "shadcn-ui": "^0.8.0",
     "simplex-noise": "^4.0.3",
     "tailwind-merge": "^2.5.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "tikapi": "^3.1.6"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.11.8",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",

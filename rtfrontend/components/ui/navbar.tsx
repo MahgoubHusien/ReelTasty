@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        isScrolled
+        isScrolled || isOpen
           ? 'bg-background dark:bg-background-dark shadow-lg'
           : 'bg-transparent'
       } ${!isVisible ? '-top-20' : 'top-0'} text-foreground dark:text-white`}
@@ -96,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden md:flex space-x-4 items-center ml-8">
             <Link href="/" className="nav-item transition-colors px-2 py-1" style={navItemStyle('home')}>Home</Link>
             <Link href="/recipeGeneration" className="nav-item transition-colors px-2 py-1" style={navItemStyle('recipeGeneration')}>Recipe Generation</Link>
-            <Link href="/trending-foods" className="nav-item transition-colors px-2 py-1" style={navItemStyle('trending-foods')}>Trending Foods</Link>
+            <Link href="/trendingFoods" className="nav-item transition-colors px-2 py-1" style={navItemStyle('trendingFoods')}>Trending Foods</Link>
             <Link href="/recipes" className="nav-item transition-colors px-2 py-1" style={navItemStyle('recipes')}>Recipes</Link>
           </div>
         </div>
@@ -163,10 +163,10 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
       {isOpen && (
-        <div className="absolute top-full left-0 w-full bg-background bg-opacity-90 dark:bg-black text-foreground dark:text-white flex flex-col items-center md:hidden pb-4">
+        <div className="absolute top-full left-0 w-full bg-background bg-opacity-100 dark:bg-background-dark text-foreground dark:text-white flex flex-col items-center md:hidden pb-4">
           <Link href="/" className="nav-item py-4 w-full text-center" style={navItemStyle('home')} onClick={toggleMenu}>Home</Link>
           <Link href="/recipeGeneration" className="nav-item py-4 w-full text-center" style={navItemStyle('recipeGeneration')} onClick={toggleMenu}>Recipe Generation</Link>
-          <Link href="/trending-foods" className="nav-item py-4 w-full text-center" style={navItemStyle('trending-foods')} onClick={toggleMenu}>Trending Foods</Link>
+          <Link href="/trendingFoods" className="nav-item py-4 w-full text-center" style={navItemStyle('trendingFoods')} onClick={toggleMenu}>Trending Foods</Link>
           <Link href="/recipes" className="nav-item py-4 w-full text-center" style={navItemStyle('recipes')} onClick={toggleMenu}>Recipes</Link>
           {isLoggedIn ? (
             <div className="nav-item py-4 w-full text-center">

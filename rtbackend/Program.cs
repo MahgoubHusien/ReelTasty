@@ -1,5 +1,4 @@
 using Amazon.S3;
-using Amazon.S3.Transfer;
 using dotenv.net;
 using rtbackend.Data;
 using rtbackend.Models;
@@ -112,9 +111,8 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Register TikAPI Service and S3 Upload Service
-builder.Services.AddHttpClient<TikApi>();
-builder.Services.AddSingleton<S3Service>();
+// Register TikApi service with required dependencies
+builder.Services.AddScoped<TikApi>();
 
 // Add Controllers and Swagger
 builder.Services.AddControllers();
@@ -136,7 +134,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// Uncomment if you have HTTPS configured
 // app.UseHttpsRedirection();
 
 app.UseRouting();

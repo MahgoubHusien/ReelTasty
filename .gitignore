@@ -55,6 +55,7 @@ yarn-error.log*
 rtfrontend/app/.env
 rtbackend/appsettings.json
 rtbackend/appsettings.Development.json
+rtfrontend/.env
 
 # vercel
 .vercel

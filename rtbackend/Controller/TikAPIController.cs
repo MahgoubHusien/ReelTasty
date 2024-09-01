@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
+using rtbackend.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,102 +14,72 @@ public class TikAPIController : ControllerBase
         _tikApi = tikApi;
     }
 
-    [HttpGet("TrendingPosts")]
-    public async Task<IActionResult> GetTrendingPosts(string sessionId = "0", string country = "us")
+    [HttpGet("Videos")]
+    public async Task<IActionResult> GetVideos([FromQuery] string? hashtag = null)
     {
         try
         {
-            var response = await _tikApi.GetTrendingPostsAsync(sessionId, country);
-
-            var jsonResponse = JsonDocument.Parse(response);
-            var itemList = jsonResponse.RootElement.GetProperty("itemList").EnumerateArray();
-            var trendingPosts = new List<object>();
-
-            foreach (var item in itemList)
-            {
-                trendingPosts.Add(item);
-            }
-
-            return Ok(new { Posts = trendingPosts });
+            var videos = await _tikApi.GetVideoMetadataAsync(hashtag);
+            return Ok(videos);
         }
-        catch (HttpRequestException ex)
+        catch (System.Exception ex)
         {
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
         }
     }
 
-    [HttpGet("PostsByHashtag")]
-    public async Task<IActionResult> GetPostsByHashtag(string hashtagName)
+    [HttpGet("VideoUrl")]
+    public async Task<IActionResult> GetVideoUrl([FromQuery] string videoId)
     {
-        if (string.IsNullOrWhiteSpace(hashtagName))
+        if (string.IsNullOrWhiteSpace(videoId))
         {
-            return BadRequest("Hashtag name cannot be empty.");
+            return BadRequest("Video ID cannot be empty.");
         }
 
         try
         {
-            var hashtagId = await _tikApi.GetHashtagIdByNameAsync(hashtagName);
-            var response = await _tikApi.GetPostsByHashtagIdAsync(hashtagId);
-
-            var jsonResponse = JsonDocument.Parse(response);
-            var itemList = jsonResponse.RootElement.GetProperty("itemList").EnumerateArray();
-            var hashtagPosts = new List<object>();
-
-            foreach (var item in itemList)
-            {
-                hashtagPosts.Add(item);
-            }
-
-            return Ok(new { Posts = hashtagPosts });
+            var videoUrl = await _tikApi.GetVideoUrlAsync(videoId);
+            return Ok(new { VideoUrl = videoUrl });
         }
-        catch (HttpRequestException ex)
+        catch (System.Exception ex)
         {
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
         }
     }
 
-    [HttpPost("DownloadAndUploadVideo")]
-    public async Task<IActionResult> DownloadAndUploadVideo(string downloadAddr, string fileName, string videoId, string author, string description, string hashtags)
+    [HttpPost("AddVideo")]
+    public async Task<IActionResult> AddVideo([FromBody] VideoMetadata videoMetadata)
     {
+        if (videoMetadata == null)
+        {
+            return BadRequest("Video metadata cannot be null.");
+        }
+
         try
         {
-            var s3Url = await _tikApi.DownloadAndUploadVideoAsync(downloadAddr, fileName, videoId, author, description, hashtags);
-            return Ok(new { S3Url = s3Url });
+            await _tikApi.AddVideoAsync(videoMetadata);
+            return Ok("Video added successfully.");
         }
-        catch (InvalidOperationException ex)
+        catch (System.Exception ex)
         {
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
         }
     }
 
-    [HttpPost("TestDownloadAndStore")]
-    public async Task<IActionResult> TestDownloadAndStore()
+    [HttpDelete("RemoveVideo")]
+    public async Task<IActionResult> RemoveVideo([FromQuery] string videoId)
     {
-        try
+        if (string.IsNullOrWhiteSpace(videoId))
         {
-            await _tikApi.TestDownloadAndStoreTikTokVideosAsync();
-            return Ok("Test completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-        }
-    }
-
-    [HttpPost("ProcessHashtags")]
-    public async Task<IActionResult> ProcessHashtags([FromBody] HashtagRequest request)
-    {
-        if (request == null || request.Hashtags == null || !request.Hashtags.Any())
-        {
-            return BadRequest("Hashtags cannot be null or empty.");
+            return BadRequest("Video ID cannot be empty.");
         }
 
         try
         {
-            await _tikApi.ProcessHashtagsAsync(request.Hashtags, request.VideoCount);
-            return Ok("Hashtags processed successfully.");
+            await _tikApi.RemoveVideoAsync(videoId);
+            return Ok("Video removed successfully.");
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
         }

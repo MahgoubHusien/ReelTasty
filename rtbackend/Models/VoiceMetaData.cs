@@ -1,4 +1,4 @@
-namespace rtbackend.Models 
+namespace rtbackend.Models
 {
     public class VideoMetadata
     {
