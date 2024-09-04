@@ -16,6 +16,7 @@
     "@mui/material": "^5.16.7",
     "@nextui-org/react": "^2.4.6",
     "aws-sdk": "^2.1687.0",
+    "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",

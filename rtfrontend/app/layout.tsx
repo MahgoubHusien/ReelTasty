@@ -13,7 +13,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';  
 
   const hideNavbarPaths = ["/auth", "/confirmEmail", "/forgotPassword", "/resetPassword"];
 

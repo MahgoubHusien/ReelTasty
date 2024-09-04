@@ -1,28 +1,24 @@
-export interface VideoStats {
+export interface AuthorStats {
     diggCount?: number;
-    commentCount?: number;
-    shareCount?: number;
-    playCount?: number;
-    collectCount?: number;
-  }
-  
-  export interface AuthorStats {
     followerCount?: number;
     followingCount?: number;
     friendCount?: number;
     heartCount?: number;
     videoCount?: number;
-  }
-  
-  export interface VideoMetaData {
+}
+
+export interface VideoMetaData {
     videoId: string;
     s3Url: string;
-    avatarLarger: string;
+    avatarLarger?: string;
     author: string;
-    date: string;
+    date?: string;
     description: string;
-    hashtags: string; 
-    stats?: VideoStats;
-    authorStats?: AuthorStats;
+    hashtags: string | string[];
+    collectCount?: number;
+    commentCount?: number;
+    diggCount?: number;
+    playCount?: number;
+    shareCount?: number;
   }
   

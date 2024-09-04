@@ -2,58 +2,52 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Chatbot from "@/components/ui/chatbot";
-import {
-  fetchVideoById,
-  fetchVideoUrlById,
-  saveVideoForUser,
-  unsaveVideoForUser,
-  checkIfVideoIsSaved,
-  addToRecentlySeen,
-  fetchUserId,
-} from "@/service/api";
+import { fetchVideoById, fetchVideoUrlById } from "@/service/api";
+import { processAndStoreVideo } from "@/scripts/processVideo";
 import { VideoMetaData } from "@/types/types";
+import Chatbot from "@/components/ui/chatbot";
 import { AiOutlineRobot } from "react-icons/ai";
 
-const TikTokDetailPage: React.FC = () => {
+const VideoDetailPage: React.FC = () => {
   const params = useParams();
-  const videoId = params?.videoId as string | undefined;
+  const videoId = params?.videoId as string;
   const [videoData, setVideoData] = useState<VideoMetaData | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [isSaved, setIsSaved] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchProcessedVideo = async (videoId: string) => {
+    const res = await fetch(`/api/processVideo?videoId=${videoId}`);
+    if (!res.ok) {
+      throw new Error("Failed to process video");
+    }
+    return res.json();
+  };
 
   useEffect(() => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          console.log("Fetching video data for videoId:", videoId);
-
-          const data = await fetchVideoById(videoId);
-          const videoMetadata = data?.video; // Access the video data
-
-          if (videoMetadata) {
-            setVideoData(videoMetadata);
-            const url = await fetchVideoUrlById(videoId);
-            setVideoUrl(videoMetadata.s3Url || url);
-            console.log("Fetched video URL:", url);
-
-            const { isSaved } = await checkIfVideoIsSaved(videoId);
-            setIsSaved(isSaved);
-
-            const userId = await fetchUserId();
-            if (userId) {
-              const addedToRecentlySeen = await addToRecentlySeen(userId, videoId);
-              if (!addedToRecentlySeen) {
-                console.error("Failed to add video to recently seen.");
-              }
-            } else {
-              console.error("User ID is not available.");
-            }
+          // Fetch video metadata by ID
+          let videoResponse = await fetchVideoById(videoId);
+          console.log("Fetched video metadata:", videoResponse);
+  
+          // If video is not found, process it
+          if (!videoResponse || !videoResponse.video) {
+            console.log("Video not found in the database, processing video...");
+            videoResponse = await fetchProcessedVideo(videoId);
+            console.log("Processed video metadata:", videoResponse);
+          }
+  
+          console.log("Final video metadata:", videoResponse.video);
+  
+          // Check if the metadata and URL are available
+          if (videoResponse && videoResponse.video) {
+            console.log("Setting video data and URL...");
+            setVideoData(videoResponse.video);
+            setVideoUrl(videoResponse.video.s3Url);
           } else {
-            setVideoData(null);
-            setVideoUrl(null);
+            throw new Error("Failed to fetch or process video metadata.");
           }
         } catch (err: any) {
           setError(err.message);
@@ -61,50 +55,23 @@ const TikTokDetailPage: React.FC = () => {
           setLoading(false);
         }
       };
+  
       fetchData();
     }
   }, [videoId]);
-
-  const handleSave = async () => {
-    if (videoId) {
-      const result = await saveVideoForUser(videoId);
-      if (result) {
-        setIsSaved(true);
-      }
-    }
-  };
-
-  const handleUnsave = async () => {
-    if (videoId) {
-      const result = await unsaveVideoForUser(videoId);
-      if (result) {
-        setIsSaved(false);
-      }
-    }
-  };
+  
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <p>Loading...</p>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <p>{error}</p>;
   }
 
   if (!videoData || !videoUrl) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>No video details available.</p>
-      </div>
-    );
-    }
-
-  // Safely handle hashtags, ensuring it's either a string or array
-  const hashtagsArray = Array.isArray(videoData.hashtags)
-    ? videoData.hashtags
-    : typeof videoData.hashtags === "string"
-    ? videoData.hashtags.split(",")
-    : [];
+    return <p>No video details available.</p>;
+  }
 
   return (
     <div className="min-h-screen w-full bg-background dark:bg-background-dark text-gray-900 dark:text-gray-100 py-8 px-2 pt-24">
@@ -117,23 +84,6 @@ const TikTokDetailPage: React.FC = () => {
             controls
             className="w-full h-[600px] object-cover rounded-lg mt-2"
           />
-          <div className="mt-2 flex justify-center">
-            {isSaved ? (
-              <button
-                onClick={handleUnsave}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg"
-              >
-                Unsave Video
-              </button>
-            ) : (
-              <button
-                onClick={handleSave}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-              >
-                Save Video
-              </button>
-            )}
-          </div>
         </div>
 
         <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[700px]">
@@ -211,4 +161,4 @@ const TikTokDetailPage: React.FC = () => {
   );
 };
 
-export default TikTokDetailPage;
+export default VideoDetailPage;

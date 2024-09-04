@@ -1,46 +1,77 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+import { AiOutlineSend } from 'react-icons/ai'; 
 
-const Chatbot: React.FC = () => {
-  const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState("");
+interface ChatbotProps {
+  videoId: string;
+}
+
+const Chatbot: React.FC<ChatbotProps> = ({ videoId }) => {
+  const [messages, setMessages] = useState<{ sender: string, text: string }[]>([]);
+  const [input, setInput] = useState('');
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history for the specific videoId
+  useEffect(() => {
+    const savedMessages = localStorage.getItem(`chat_${videoId}`);
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    }
+  }, [videoId]);
+
+  // Save chat history whenever messages update
+  useEffect(() => {
+    localStorage.setItem(`chat_${videoId}`, JSON.stringify(messages));
+    if (chatWindowRef.current) {
+      chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
+    }
+  }, [messages, videoId]);
 
   const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, input]);
-      setInput("");
+    if (input.trim() === '') return;
+
+    const newMessages = [...messages, { sender: 'user', text: input }];
+    setMessages(newMessages);
+    setInput('');
+
+    // Simulate bot response
+    setTimeout(() => {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        { sender: 'bot', text: 'This is a bot response!' }
+      ]);
+    }, 500);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSend();
     }
   };
 
   return (
-    <div className="bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg h-[500px]">
-      <h2 className="text-xl font-semibold mb-4 text-foreground dark:text-foreground-dark">
-        Chat with Us
-      </h2>
-      <div className="flex flex-col h-full justify-between">
-        <div className="flex-grow overflow-y-auto mb-4">
-          {messages.map((msg, index) => (
-            <div key={index} className="mb-2">
-              <div className="text-sm text-muted dark:text-muted-dark">
-                You: {msg}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="w-full p-2 rounded-lg border-2 border-muted dark:border-muted-dark"
-            placeholder="Type your message..."
-          />
-          <button
-            onClick={handleSend}
-            className="ml-2 bg-primary dark:bg-primary-dark text-white px-4 py-2 rounded-lg hover:bg-primary-dark"
+    <div className="chatbot-container">
+      <div className="chat-window" ref={chatWindowRef}>
+        {messages.map((message, index) => (
+          <div
+            key={index}
+            className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
           >
-            Send
-          </button>
-        </div>
+            {message.text}
+          </div>
+        ))}
+      </div>
+      <div className="input-container">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown} 
+          placeholder="Type your message..."
+          className="input-field"
+        />
+        <button onClick={handleSend} className="send-button">
+          <AiOutlineSend />
+        </button>
       </div>
     </div>
   );

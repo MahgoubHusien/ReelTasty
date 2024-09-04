@@ -97,7 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <Link href="/" className="nav-item transition-colors px-2 py-1" style={navItemStyle('home')}>Home</Link>
             <Link href="/recipeGeneration" className="nav-item transition-colors px-2 py-1" style={navItemStyle('recipeGeneration')}>Recipe Generation</Link>
             <Link href="/trendingFoods" className="nav-item transition-colors px-2 py-1" style={navItemStyle('trendingFoods')}>Trending Foods</Link>
-            <Link href="/recipes" className="nav-item transition-colors px-2 py-1" style={navItemStyle('recipes')}>Recipes</Link>
+            <Link href="/yourRecipes" className="nav-item transition-colors px-2 py-1" style={navItemStyle('yourRecipes')}>Your Recipes</Link>
           </div>
         </div>
         <div className="flex-grow"></div>
@@ -167,7 +167,7 @@ const Navbar: React.FC<NavbarProps> = ({
           <Link href="/" className="nav-item py-4 w-full text-center" style={navItemStyle('home')} onClick={toggleMenu}>Home</Link>
           <Link href="/recipeGeneration" className="nav-item py-4 w-full text-center" style={navItemStyle('recipeGeneration')} onClick={toggleMenu}>Recipe Generation</Link>
           <Link href="/trendingFoods" className="nav-item py-4 w-full text-center" style={navItemStyle('trendingFoods')} onClick={toggleMenu}>Trending Foods</Link>
-          <Link href="/recipes" className="nav-item py-4 w-full text-center" style={navItemStyle('recipes')} onClick={toggleMenu}>Recipes</Link>
+          <Link href="/yourRecipes" className="nav-item py-4 w-full text-center" style={navItemStyle('yourRecipes')} onClick={toggleMenu}>Your Recipes</Link>
           {isLoggedIn ? (
             <div className="nav-item py-4 w-full text-center">
               <Image src={userProfilePic} alt="User Profile" className="w-8 h-8 rounded-full object-cover mx-auto cursor-pointer" onClick={toggleDropdown} />

@@ -16,11 +16,11 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
 
   return (
     <Link href={`/trendingFoods/${video.videoId}`}>
-      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px]">
+      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px] h-[650px]">
         <video
           src={video.s3Url}
           controls
-          className="w-full h-[500px] object-cover rounded-lg mb-4"
+          className="w-full h-[400px] object-cover rounded-lg mb-4"
         />
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center space-x-4">
@@ -39,21 +39,28 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
             </div>
           </div>
         </div>
-        <p className="text-sm text-foreground dark:text-foreground-dark">
-          {showMore || video.description.length <= maxDescriptionLength
-            ? video.description
-            : `${video.description.slice(0, maxDescriptionLength)}...`}
-        </p>
-        {video.description.length > maxDescriptionLength && (
-          <button
-            onClick={(e) => {
-              e.preventDefault(); // Prevent Link from being triggered
-              toggleShowMore();
-            }}
-            className="text-primary dark:text-primary-dark text-sm mt-2 underline hover:text-primary-light dark:hover:text-primary-light-dark"
-          >
-            {showMore ? "Show Less" : "Show More"}
-          </button>
+        
+        {video.description ? (
+          <>
+            <p className="text-sm text-foreground dark:text-foreground-dark">
+              {showMore || video.description.length <= maxDescriptionLength
+                ? video.description
+                : `${video.description.slice(0, maxDescriptionLength)}...`}
+            </p>
+            {video.description.length > maxDescriptionLength && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  toggleShowMore();
+                }}
+                className="text-primary dark:text-primary-dark text-sm mt-2 underline hover:text-primary-light dark:hover:text-primary-light-dark"
+              >
+                {showMore ? "Show Less" : "Show More"}
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted dark:text-muted-dark">No description available.</p>
         )}
 
         <div className="mt-4">
