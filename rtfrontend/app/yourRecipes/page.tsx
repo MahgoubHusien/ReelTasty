@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import VideoGrid from "../../components/ui/VideoGrid";
 import { fetchRecentlySeenVideos, fetchSavedVideos, fetchSubmittedVideos, fetchUserId } from "@/service/api";
 import { VideoMetaData } from "@/types/types"; 
+import { useRouter } from "next/navigation";
 
 const YourVideosPage: React.FC = () => {
   const [recentlySeenVideos, setRecentlySeenVideos] = useState<VideoMetaData[]>([]);
@@ -11,8 +12,26 @@ const YourVideosPage: React.FC = () => {
   const [submittedVideos, setSubmittedVideos] = useState<VideoMetaData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [initialLoading, setInitialLoading] = useState(true); 
+  const router = useRouter(); 
 
   useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+    setInitialLoading(false); 
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn && !initialLoading) {
+      router.push("/auth?view=login");
+      return;
+    }
+
     const fetchAllData = async () => {
       try {
         const userId = await fetchUserId();
@@ -35,8 +54,27 @@ const YourVideosPage: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchAllData();
-  }, []);
+
+    if (isLoggedIn && !initialLoading) {
+      fetchAllData();
+    }
+  }, [isLoggedIn, initialLoading, router]);
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <p>Checking authentication status...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <p>You must log in to view this page.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -59,7 +97,6 @@ const YourVideosPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-bold mb-6">Your Videos</h2>
 
-        {/* Recently Seen Videos */}
         {recentlySeenVideos && recentlySeenVideos.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-semibold mb-4">Recently Seen Videos</h3>
@@ -67,7 +104,6 @@ const YourVideosPage: React.FC = () => {
           </div>
         )}
 
-        {/* Saved Videos */}
         {savedVideos && savedVideos.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-semibold mb-4">Saved Videos</h3>
@@ -75,7 +111,6 @@ const YourVideosPage: React.FC = () => {
           </div>
         )}
 
-        {/* Submitted Videos */}
         {submittedVideos && submittedVideos.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-semibold mb-4">Submitted Videos</h3>
@@ -83,7 +118,6 @@ const YourVideosPage: React.FC = () => {
           </div>
         )}
 
-        {/* Fallback if no videos available */}
         {recentlySeenVideos.length === 0 && savedVideos.length === 0 && submittedVideos.length === 0 && (
           <div className="w-full text-center mt-12">
             <p className="text-gray-500">You don't have any videos yet.</p>

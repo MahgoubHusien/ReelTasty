@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography; 
 using rtbackend.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using rtbackend.Services;
+
 
 namespace rtbackend.Controllers
 {
@@ -39,13 +41,23 @@ namespace rtbackend.Controllers
             {
                 throw new InvalidOperationException("JWT environment variables are not set properly.");
             }
-
-            Console.WriteLine($"JWT Secret Key: {_jwtSecretKey}");
-            Console.WriteLine($"JWT Issuer: {_jwtIssuer}");
-            Console.WriteLine($"JWT Audience: {_jwtAudience}");
         }
 
-        // POST: api/User/Register
+        [Authorize]
+        [HttpGet("GetUserId")]
+        public IActionResult GetUserId()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Console.WriteLine($"Fetched userId from token: {userId}");
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("User not found.");
+            }
+
+            return Ok(new { userId });
+        }
+
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] Register model)
         {
@@ -70,7 +82,6 @@ namespace rtbackend.Controllers
                     var callbackUrl = Url.Action(nameof(ConfirmEmail), "User",
                         new { userId = user.Id, code }, Request.Scheme);
 
-                    // Send the confirmation email
                     await _emailSender.SendEmailAsync(
                         model.Email, 
                         "Confirm your email", 
@@ -85,8 +96,6 @@ namespace rtbackend.Controllers
             return BadRequest("Invalid model state");
         }
 
-
-        // POST: api/User/Login
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] Login model)
         {
@@ -95,32 +104,29 @@ namespace rtbackend.Controllers
                 return BadRequest("Email and Password are required.");
             }
 
-            Console.WriteLine($"Attempting to log in with email: {model.Email}");
-
-            // Find the user by email first
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 return Unauthorized("Invalid login attempt.");
             }
 
-            //use the UserName for sign-in, which should be the email
             var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, false, false);
 
             if (result.Succeeded)
             {
                 var token = GenerateJwtToken(user);
-                return Ok(new { token });
+                var refreshToken = GenerateRefreshToken();
+
+                Console.WriteLine($"Generated JWT Token: {token}");
+
+                return Ok(new { token, refreshToken });
             }
             else
             {
-                Console.WriteLine($"Login failed for user: {model.Email}. Result: {result}");
                 return Unauthorized("Invalid login attempt.");
             }
         }
 
-
-        // GET: api/User/ConfirmEmail
         [HttpGet("ConfirmEmail")]
         public async Task<IActionResult> ConfirmEmail(string userId, string code)
         {
@@ -144,7 +150,6 @@ namespace rtbackend.Controllers
             return BadRequest("Error confirming email.");
         }
 
-        // POST: api/User/ResendConfirmationEmail
         [HttpPost("ResendConfirmationEmail")]
         public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationEmail model)
         {
@@ -166,7 +171,6 @@ namespace rtbackend.Controllers
             return Ok("Confirmation email resent.");
         }
 
-        // POST: api/User/ForgotPassword
         [HttpPost("ForgotPassword")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPassword model)
         {
@@ -182,14 +186,22 @@ namespace rtbackend.Controllers
             }
 
             var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var callbackUrl = Url.Action(nameof(ResetPassword), "User",
-                new { code }, Request.Scheme);
 
+            var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
+            if (string.IsNullOrEmpty(frontendUrl))
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Frontend URL not configured.");
+            }
+
+            var resetUrl = $"{frontendUrl}/resetPassword?code={Uri.EscapeDataString(code)}";
+
+            await _emailSender.SendEmailAsync(user.Email, "Reset Password",
+                $"Please reset your password by clicking <a href='{resetUrl}'>here</a>");
 
             return Ok("Password reset email sent.");
         }
 
-        // POST: api/User/ResetPassword
+
         [HttpPost("ResetPassword")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPassword model)
         {
@@ -213,7 +225,6 @@ namespace rtbackend.Controllers
             return BadRequest(result.Errors);
         }
 
-        // GET: api/User/Profile
         [Authorize]
         [HttpGet("Profile")]
         public async Task<IActionResult> GetUserProfile()
@@ -237,7 +248,6 @@ namespace rtbackend.Controllers
             return NotFound("User not found.");
         }
 
-        // PUT: api/User/UpdateProfile
         [Authorize]
         [HttpPut("UpdateProfile")]
         public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateProfile model)
@@ -272,7 +282,6 @@ namespace rtbackend.Controllers
             return NotFound("User not found.");
         }
 
-        // DELETE: api/User/Delete
         [Authorize]
         [HttpDelete("Delete")]
         public async Task<IActionResult> DeleteUser()
@@ -299,7 +308,6 @@ namespace rtbackend.Controllers
             return NotFound("User not found.");
         }
 
-        // POST: api/User/RefreshToken
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshToken model)
         {
@@ -323,59 +331,54 @@ namespace rtbackend.Controllers
             }
 
             var newJwtToken = GenerateJwtToken(user);
+            var newRefreshToken = GenerateRefreshToken();
 
-            return Ok(new { token = newJwtToken });
+
+            return Ok(new { token = newJwtToken, refreshToken = newRefreshToken });
         }
 
         private string GenerateJwtToken(User user)
         {
-            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
-            var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
-            var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
-
-            if (string.IsNullOrEmpty(secretKey))
-            {
-                throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
-            }
-
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id), 
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id)
+                new Claim(ClaimTypes.NameIdentifier, user.Id), 
+                new Claim(ClaimTypes.Name, user.UserName) 
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: jwtIssuer,
-                audience: jwtAudience,
+                issuer: _jwtIssuer,
+                audience: _jwtAudience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(30),
+                expires: DateTime.Now.AddMinutes(60),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
+        }
 
         private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
-            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY");
-
-            if (string.IsNullOrEmpty(secretKey))
-            {
-                throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
-            }
-
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateAudience = false,
                 ValidateIssuer = false,
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                ValidateLifetime = false // we want to get the principal even if the token is expired
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecretKey)),
+                ValidateLifetime = false  
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();

@@ -23,8 +23,13 @@ const TikTokDetailPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); 
 
   useEffect(() => {
+    // Check if the user is logged in by checking for the authToken in localStorage
+    const token = localStorage.getItem("authToken");
+    setIsLoggedIn(!!token); // If the token exists, user is logged in
+
     if (videoId) {
       const fetchData = async () => {
         try {
@@ -39,17 +44,20 @@ const TikTokDetailPage: React.FC = () => {
             setVideoUrl(videoMetadata.s3Url || url);
             console.log("Fetched video URL:", url);
 
-            const { isSaved } = await checkIfVideoIsSaved(videoId);
-            setIsSaved(isSaved);
+            if (isLoggedIn) {
+              // Only check if the video is saved if the user is logged in
+              const { isSaved } = await checkIfVideoIsSaved(videoId);
+              setIsSaved(isSaved);
 
-            const userId = await fetchUserId();
-            if (userId) {
-              const addedToRecentlySeen = await addToRecentlySeen(userId, videoId);
-              if (!addedToRecentlySeen) {
-                console.error("Failed to add video to recently seen.");
+              const userId = await fetchUserId();
+              if (userId) {
+                const addedToRecentlySeen = await addToRecentlySeen(userId, videoId);
+                if (!addedToRecentlySeen) {
+                  console.error("Failed to add video to recently seen.");
+                }
+              } else {
+                console.error("User ID is not available.");
               }
-            } else {
-              console.error("User ID is not available.");
             }
           } else {
             setVideoData(null);
@@ -63,9 +71,14 @@ const TikTokDetailPage: React.FC = () => {
       };
       fetchData();
     }
-  }, [videoId]);
+  }, [videoId, isLoggedIn]);
 
   const handleSave = async () => {
+    if (!isLoggedIn) {
+      alert("Please log in to save videos."); // Alert user to log in if they are not logged in
+      return;
+    }
+
     if (videoId) {
       const result = await saveVideoForUser(videoId);
       if (result) {
@@ -84,11 +97,11 @@ const TikTokDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="flex items-center justify-center min-h-screen">Error: {error}</div>;
   }
 
   if (!videoData || !videoUrl) {
@@ -97,14 +110,7 @@ const TikTokDetailPage: React.FC = () => {
         <p>No video details available.</p>
       </div>
     );
-    }
-
-  // Safely handle hashtags, ensuring it's either a string or array
-  const hashtagsArray = Array.isArray(videoData.hashtags)
-    ? videoData.hashtags
-    : typeof videoData.hashtags === "string"
-    ? videoData.hashtags.split(",")
-    : [];
+  }
 
   return (
     <div className="min-h-screen w-full bg-background dark:bg-background-dark text-gray-900 dark:text-gray-100 py-8 px-2 pt-24">
@@ -118,19 +124,28 @@ const TikTokDetailPage: React.FC = () => {
             className="w-full h-[600px] object-cover rounded-lg mt-2"
           />
           <div className="mt-2 flex justify-center">
-            {isSaved ? (
-              <button
-                onClick={handleUnsave}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg"
-              >
-                Unsave Video
-              </button>
+            {isLoggedIn ? (
+              isSaved ? (
+                <button
+                  onClick={handleUnsave}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                >
+                  Unsave Video
+                </button>
+              ) : (
+                <button
+                  onClick={handleSave}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                >
+                  Save Video
+                </button>
+              )
             ) : (
               <button
-                onClick={handleSave}
+                onClick={() => alert("Please log in to save videos.")}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg"
               >
-                Save Video
+                Log in to Save Video
               </button>
             )}
           </div>

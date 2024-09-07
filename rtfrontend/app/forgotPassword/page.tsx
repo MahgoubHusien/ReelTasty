@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [messageColor, setMessageColor] = useState("text-green-500");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await fetch("/api/User/ForgotPassword", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/User/ForgotPassword`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -21,16 +22,18 @@ const ForgotPasswordPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Error sending reset email.");
+        throw new Error("Email not found. Please try again.");
       }
 
       setMessage("Password reset email sent. Please check your inbox.");
+      setMessageColor("text-green-500"); 
     } catch (error) {
-        if (error instanceof Error) {
-            setMessage(error.message);
-          } else {
-            setMessage("An unexpected error occurred.");
-          }
+      if (error instanceof Error) {
+        setMessage(error.message);
+      } else {
+        setMessage("An unexpected error occurred.");
+      }
+      setMessageColor("text-red-500"); 
     }
   };
 
@@ -64,7 +67,10 @@ const ForgotPasswordPage: React.FC = () => {
             Reset Password
           </button>
         </form>
-        <p className="mt-4 text-center text-red-500">{message}</p>
+
+        {message && (
+          <p className={`mt-4 text-center ${messageColor}`}>{message}</p>
+        )}
       </div>
     </div>
   );

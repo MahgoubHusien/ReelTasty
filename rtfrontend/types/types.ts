@@ -22,3 +22,11 @@ export interface VideoMetaData {
     shareCount?: number;
   }
   
+export interface TikTokLinkSubmissionWithMetadata {
+    id: number;
+    userId: string;
+    tikTokLink: string;
+    submittedAt: string;
+    videoMetaData: VideoMetaData;
+  }
+  

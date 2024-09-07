@@ -1,7 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Pool } from 'pg';
 
-// Create a new pool with the connection string from your environment variables
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
@@ -11,7 +10,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { videoId, author, description, s3Url } = req.body;
 
     try {
-      // Insert the video metadata into your PostgreSQL database
       const query = `
         INSERT INTO videos (video_id, author, description, s3_url)
         VALUES ($1, $2, $3, $4) RETURNING *;
@@ -19,7 +17,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const values = [videoId, author, description, s3Url];
       const result = await pool.query(query, values);
 
-      // Return the inserted record as confirmation
       res.status(200).json(result.rows[0]);
     } catch (error) {
       console.error('Error saving video to the database:', error);

@@ -17,7 +17,6 @@ namespace rtbackend.Services
 
         public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
         {
-            // Load environment variables from .env file
             DotEnv.Load();
 
             _configuration = configuration;
@@ -26,7 +25,6 @@ namespace rtbackend.Services
 
         public async Task SendEmailAsync(string email, string subject, string message)
         {
-            // Fetching all values from environment variables or fallback to configuration
             var server = Environment.GetEnvironmentVariable("SERVER") ?? _configuration["SmtpSettings:Server"];
             var portString = Environment.GetEnvironmentVariable("PORT") ?? _configuration["SmtpSettings:Port"];
             var senderName = Environment.GetEnvironmentVariable("SENDERNAME") ?? _configuration["SmtpSettings:SenderName"];
@@ -54,7 +52,6 @@ namespace rtbackend.Services
                 {
                     _logger.LogInformation("Connecting to SMTP server...");
 
-                    // Use STARTTLS if port is 587, otherwise connect directly using SSL if port is 465
                     var useSsl = bool.Parse(useSslString);
                     var port = int.Parse(portString);
                     SecureSocketOptions secureSocketOptions = port == 587 ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
@@ -79,5 +76,7 @@ namespace rtbackend.Services
                 throw;
             }
         }
+
+
     }
 }

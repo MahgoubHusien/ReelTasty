@@ -8,7 +8,7 @@ interface VideoCardProps {
 
 const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
   const [showMore, setShowMore] = useState(false);
-  const maxDescriptionLength = 100;
+  const maxDescriptionLength = 80;
 
   const toggleShowMore = () => {
     setShowMore((prevShowMore) => !prevShowMore);
@@ -16,7 +16,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
 
   return (
     <Link href={`/trendingFoods/${video.videoId}`}>
-      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px] h-[650px]">
+      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px] h-[595px]">
         <video
           src={video.s3Url}
           controls
@@ -24,18 +24,11 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
         />
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center space-x-4">
-            <img
-              src={video.avatarLarger}
-              alt={video.author}
-              className="w-10 h-10 rounded-full"
-            />
+
             <div>
               <h3 className="text-lg font-semibold text-foreground dark:text-foreground-dark">
                 {video.author}
               </h3>
-              <p className="text-sm text-muted dark:text-muted-dark">
-                {new Date(video.date).toLocaleDateString()}
-              </p>
             </div>
           </div>
         </div>

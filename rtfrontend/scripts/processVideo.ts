@@ -1,28 +1,22 @@
 import TikAPI from 'tikapi';
 import AWS from 'aws-sdk';
-import pkg from 'pg';
+import axios from 'axios';  
 import fs from 'fs';
 import path from 'path';
+import { Pool } from 'pg';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import 'dotenv/config';
 
-const { Pool } = pkg;
-
-// Set up TikAPI
 const api = TikAPI(process.env.TIKAPI_KEY as string);
-
-// Set up AWS S3
 const s3 = new AWS.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
   region: process.env.AWS_REGION as string,
 });
-
-// Set up PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Type for video metadata
 interface VideoMetadata {
   videoId: string;
   author: string;
@@ -38,31 +32,43 @@ interface VideoMetadata {
   };
 }
 
-// Store video metadata in PostgreSQL
 async function storeVideoMetadataInDB(videoMetadata: VideoMetadata) {
-  const query = `
-    INSERT INTO tiktok_videos 
-    (video_id, author, description, hashtags, s3_url, avatar_large_url, play_count, share_count, comment_count, digg_count) 
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-  `;
-  const values = [
-    videoMetadata.videoId,
-    videoMetadata.author,
-    videoMetadata.description,
-    videoMetadata.hashtags,
-    videoMetadata.s3Url,
-    videoMetadata.avatarLargeUrl,
-    videoMetadata.stats.playCount,
-    videoMetadata.stats.shareCount,
-    videoMetadata.stats.commentCount,
-    videoMetadata.stats.diggCount,
-  ];
+  try {
+    const existingVideo = await pool.query(
+      `SELECT video_id FROM tiktok_videos WHERE video_id = $1`,
+      [videoMetadata.videoId]
+    );
 
-  await pool.query(query, values);
-  console.log(`Video metadata stored for video ID: ${videoMetadata.videoId}`);
+    if (existingVideo.rowCount ?? 0 > 0) {
+      console.log(`Video with ID ${videoMetadata.videoId} already exists. Skipping insert.`);
+      return;
+    }
+
+    const query = `
+      INSERT INTO tiktok_videos 
+      (video_id, author, description, hashtags, s3_url, avatar_large_url, play_count, share_count, comment_count, digg_count) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `;
+    const values = [
+      videoMetadata.videoId,
+      videoMetadata.author,
+      videoMetadata.description,
+      videoMetadata.hashtags,
+      videoMetadata.s3Url,
+      videoMetadata.avatarLargeUrl,
+      videoMetadata.stats.playCount,
+      videoMetadata.stats.shareCount,
+      videoMetadata.stats.commentCount,
+      videoMetadata.stats.diggCount,
+    ];
+
+    await pool.query(query, values);
+    console.log(`Video metadata stored for video ID: ${videoMetadata.videoId}`);
+  } catch (err) {
+    console.error(`Error storing video metadata for video ID: ${videoMetadata.videoId}`, err);
+  }
 }
 
-// Upload video to S3
 async function uploadVideoToS3(filePath: string, videoId: string): Promise<string> {
   const fileContent = fs.readFileSync(filePath);
   const fileName = `${videoId}.mp4`;
@@ -71,20 +77,39 @@ async function uploadVideoToS3(filePath: string, videoId: string): Promise<strin
     Bucket: process.env.S3_BUCKET_NAME as string,
     Key: fileName,
     Body: fileContent,
-    ContentType: 'video/mp4', 
+    ContentType: 'video/mp4',
   };
 
   const uploadResult = await s3.upload(s3Params).promise();
   console.log(`Video uploaded to S3 with key: ${fileName}`);
 
-  // Return S3 URL
   return uploadResult.Location;
 }
 
-// Process video and store it in S3 and PostgreSQL
-export async function processAndStoreVideo(videoId: string): Promise<VideoMetadata | null> {
+async function downloadVideo(url: string, filePath: string) {
+  const response = await axios({
+    url,
+    method: 'GET',
+    responseType: 'stream',
+  });
+
+  return new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(filePath);
+    response.data.pipe(writer);
+
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { videoId } = req.query;
+
+  if (!videoId || typeof videoId !== 'string') {
+    return res.status(400).json({ error: 'Video ID is required' });
+  }
+
   try {
-    // Fetch video metadata from TikAPI
     const response = await api.public.video({ id: videoId });
 
     if (!response?.json) {
@@ -94,7 +119,6 @@ export async function processAndStoreVideo(videoId: string): Promise<VideoMetada
     const item = response.json.itemInfo.itemStruct;
     console.log(`Fetched metadata for video ID: ${videoId}`);
 
-    // Define video metadata
     const videoMetadata: VideoMetadata = {
       videoId: item.id,
       author: item.author.nickname,
@@ -110,33 +134,23 @@ export async function processAndStoreVideo(videoId: string): Promise<VideoMetada
       },
     };
 
-    // Download video to local file
     const downloadAddr = item.video.downloadAddr;
     const filePath = path.join('/tmp', `${videoId}.mp4`);
 
-    if (response.saveVideo) {
-      await response.saveVideo(downloadAddr, filePath);
-      console.log(`Video downloaded to: ${filePath}`);
-    } else {
-      throw new Error('saveVideo method is not defined');
-    }
+    await downloadVideo(downloadAddr, filePath);
+    console.log(`Video downloaded to: ${filePath}`);
 
-    // Upload video to S3
     videoMetadata.s3Url = await uploadVideoToS3(filePath, videoId);
-
-    // Store video metadata in PostgreSQL
     await storeVideoMetadataInDB(videoMetadata);
 
-    // Clean up local file
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
       console.log(`Temporary file deleted: ${filePath}`);
     }
 
-    return videoMetadata;
-
+    res.status(200).json(videoMetadata);
   } catch (err) {
     console.error(`Error processing video ${videoId}:`, err);
-    return null;
+    res.status(500).json({ error: 'Error processing video' });
   }
 }

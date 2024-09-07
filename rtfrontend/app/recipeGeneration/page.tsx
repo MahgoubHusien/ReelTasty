@@ -15,7 +15,6 @@ const RecipeGenerationPage: React.FC = () => {
     setError(null);
   
     try {
-      // Extract video ID from the TikTok URL
       const urlPattern = /video\/(\d+)/;
       const match = videoLink.match(urlPattern);
   
@@ -23,7 +22,6 @@ const RecipeGenerationPage: React.FC = () => {
         const videoId = match[1];
         console.log("Extracted Video ID:", videoId);
   
-        // Redirect to the video details page with the videoId in the URL
         router.push(`/recipeGeneration/${encodeURIComponent(videoId)}`);
       } else {
         setError('Invalid TikTok video link.');

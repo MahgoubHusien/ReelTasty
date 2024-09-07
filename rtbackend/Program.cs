@@ -23,12 +23,14 @@ Console.WriteLine("JWT Secret loaded successfully.");
 // Set up CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAllOrigins", policyBuilder =>
-    {
-        policyBuilder.AllowAnyOrigin()
-                     .AllowAnyHeader()
-                     .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowSpecificOrigin",
+        builder =>
+        {
+            builder.WithOrigins("http://localhost:3000", "https://your-production-url.com") // Add your production URL here
+                   .AllowAnyHeader()
+                   .AllowAnyMethod()
+                   .AllowCredentials(); 
+        });
 });
 
 // Add services to the container
@@ -44,13 +46,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // SMTP settings
 var smtpSettings = new SmtpSettings
 {
-    Server = Environment.GetEnvironmentVariable("SMTP_SERVER"),
-    Port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "25"),
-    SenderName = Environment.GetEnvironmentVariable("SMTP_SENDER_NAME"),
-    SenderEmail = Environment.GetEnvironmentVariable("SMTP_SENDER_EMAIL"),
-    Username = Environment.GetEnvironmentVariable("SMTP_USERNAME"),
-    Password = Environment.GetEnvironmentVariable("SMTP_PASSWORD"),
-    UseSsl = bool.Parse(Environment.GetEnvironmentVariable("SMTP_USE_SSL") ?? "true")
+    Server = Environment.GetEnvironmentVariable("SERVER"),
+    Port = int.Parse(Environment.GetEnvironmentVariable("PORT")),
+    SenderName = Environment.GetEnvironmentVariable("SENDERNAME"),
+    SenderEmail = Environment.GetEnvironmentVariable("SENDEREMAIL"),
+    Username = Environment.GetEnvironmentVariable("USERNAME"),
+    Password = Environment.GetEnvironmentVariable("PASSWORD"),
+    UseSsl = bool.Parse(Environment.GetEnvironmentVariable("USESSL"))
 };
 Console.WriteLine($"SMTP Server: {smtpSettings.Server}");
 Console.WriteLine($"SMTP Port: {smtpSettings.Port}");
@@ -138,7 +140,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 
-app.UseCors("AllowAllOrigins");
+app.UseCors("AllowSpecificOrigin");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -146,3 +148,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+
+ 
+    

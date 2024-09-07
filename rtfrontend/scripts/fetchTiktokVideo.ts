@@ -5,7 +5,6 @@ import path from 'path';
 import pg from 'pg';
 import 'dotenv/config';
 
-// Define interfaces for TikTok API response
 interface TikTokHashtagInfo {
     id: string;
     title: string;
@@ -30,7 +29,7 @@ interface TikTokVideoItem {
         nickname: string;
         avatarLarger: string;
         avatarMedium: string;
-        authorStats?: TikTokAuthorStats; // Made optional
+        authorStats?: TikTokAuthorStats;  
     };
     challenges?: Array<{ title: string }>;
     stats: {
@@ -43,7 +42,6 @@ interface TikTokVideoItem {
     createTime: number;
 }
 
-// Setup AWS S3 and PostgreSQL
 const { Pool } = pg;
 
 const s3 = new AWS.S3({
@@ -59,13 +57,8 @@ const pool = new Pool({
 
 const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
 
-const hashtags = [
-         "easyrecipe", "comfortfood", "healthyfood", "cookwithme",
-    "tiktokfood", "food", "cooking", "foodie", "foodtok", "recipesoftiktok", "baking"
+const hashtags = [ "food", "cooking", "foodtok", "recipesoftiktok", "baking", "healthyfood", "tiktokfood"];
 
-];
-
-// Function to upload video to S3
 async function uploadToS3(filePath: string, fileName: string): Promise<string> {
     const fileContent = fs.readFileSync(filePath);
     const s3Params: AWS.S3.PutObjectRequest = {
@@ -77,9 +70,15 @@ async function uploadToS3(filePath: string, fileName: string): Promise<string> {
     return `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
 }
 
-// Function to insert video metadata into PostgreSQL
 async function insertVideoMetadata(item: TikTokVideoItem, s3Url: string) {
-    // Safely access authorStats
+    const checkQuery = 'SELECT video_id FROM tiktok_videos WHERE video_id = $1';
+    const checkResult = await pool.query(checkQuery, [item.id]);
+
+    if (checkResult.rowCount ?? 0 > 0) {
+        console.log(`Video with ID ${item.id} already exists, skipping insert.`);
+        return;
+    }
+
     const authorStats = item.author.authorStats || {
         diggCount: 0,
         followerCount: 0,
@@ -120,19 +119,19 @@ async function insertVideoMetadata(item: TikTokVideoItem, s3Url: string) {
         new Date(item.createTime * 1000).toISOString(),
     ];
     await pool.query(query, values);
+    console.log(`Inserted video metadata for video ID: ${item.id}`);
 }
 
-// Function to fetch videos by hashtag
+
 async function fetchVideosByHashtag(hashtagName: string) {
     if (!process.env.S3_BUCKET_NAME) {
         throw new Error('S3_BUCKET_NAME is not defined in the environment variables.');
     }
 
     try {
-        // First request to get hashtag ID by name
         const hashtagResponse = await api.public.hashtag({ name: hashtagName });
         const hashtagInfo: TikTokHashtagInfo | undefined = hashtagResponse.json?.challengeInfo?.challenge;
-        
+
         if (!hashtagInfo) {
             console.error(`No hashtag found for name: ${hashtagName}`);
             return;
@@ -143,7 +142,6 @@ async function fetchVideosByHashtag(hashtagName: string) {
         let cursor: string | undefined;
         let hasMore = true;
 
-        // Fetch videos using the hashtag ID
         while (hasMore) {
             const response = await api.public.hashtag({
                 id: hashtagInfo.id,
@@ -151,7 +149,15 @@ async function fetchVideosByHashtag(hashtagName: string) {
                 cursor: cursor,
             });
 
-            const items: TikTokVideoItem[] = response.json?.itemList || [];
+            console.log(`Response structure for ${hashtagName}:`, JSON.stringify(response.json, null, 2));
+
+            const items = response.json?.itemList || response.json?.itemStruct || []; 
+
+            if (items.length === 0) {
+                console.log(`No items found for this hashtag: ${hashtagName}.`);
+                break;
+            }
+
             for (const item of items) {
                 const description = item.desc.toLowerCase();
                 const containsExcludedKeyword = excludedKeywords.some(keyword => description.includes(keyword));
@@ -161,20 +167,25 @@ async function fetchVideosByHashtag(hashtagName: string) {
                     continue;
                 }
 
-                const downloadAddr = item.video.downloadAddr;
+                const downloadAddr = item.video?.playAddr;
+
+                if (!downloadAddr) {
+                    console.log(`Skipping video ${item.id} due to missing download address.`);
+                    continue;
+                }
+
+                console.log(`Downloading video from ${downloadAddr}`);
+
                 const fileName = `${item.id}.mp4`;
                 const filePath = path.join('/tmp', fileName);
 
                 if (response.saveVideo) {
                     await response.saveVideo(downloadAddr, filePath);
 
-                    // Upload to S3
                     const s3Url = await uploadToS3(filePath, fileName);
 
-                    // Insert metadata into the database
                     await insertVideoMetadata(item, s3Url);
 
-                    // Clean up the local file
                     fs.unlinkSync(filePath);
                     console.log(`Successfully processed and saved video ${item.id}`);
                 } else {
@@ -188,7 +199,6 @@ async function fetchVideosByHashtag(hashtagName: string) {
     } catch (err) {
         if (err instanceof Error) {
             console.error(`Error processing hashtag "${hashtagName}": ${err.message}`);
-            // Optionally log more details if available
             if ((err as any)?.json) {
                 console.error('Error details:', (err as any).json);
             }
@@ -198,7 +208,8 @@ async function fetchVideosByHashtag(hashtagName: string) {
     }
 }
 
-// Main function to process multiple hashtags
+
+
 (async () => {
     for (const hashtag of hashtags) {
         console.log(`Processing hashtag: ${hashtag}`);

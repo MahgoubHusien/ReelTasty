@@ -1,4 +1,4 @@
-import { VideoMetaData } from "../types/types";
+import { VideoMetaData, TikTokLinkSubmissionWithMetadata } from "../types/types";
 
 export async function processVideo(videoId: string): Promise<{ videoId: string }> {
     const response = await fetch('/api/processVideo', {
@@ -229,7 +229,7 @@ export const getSavedVideos = async (userId: string): Promise<VideoMetaData[] | 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/SavedVideos?userId=${encodeURIComponent(userId)}`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`, // Include auth token
+                'Authorization': `Bearer ${token}`, 
             },
         });
 
@@ -266,7 +266,7 @@ export const saveVideoForUser = async (videoId: string): Promise<boolean> => {
         if (!response.ok) {
             if (response.status === 409) {
                 console.warn("Video is already saved.");
-                return false; // Video already saved
+                return false; 
             } else if (response.status === 401) {
                 console.error("Unauthorized: Please log in again.");
                 localStorage.removeItem('authToken');
@@ -406,7 +406,7 @@ export const fetchGeneratedVideos = async (): Promise<VideoMetaData[] | null> =>
 };
 
 
-export const submitTikTokLink = async (tiktokLink: string): Promise<boolean> => {
+export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoMetaData): Promise<boolean> => {
     const userId = await fetchUserId();
     const token = localStorage.getItem('authToken');
 
@@ -416,13 +416,17 @@ export const submitTikTokLink = async (tiktokLink: string): Promise<boolean> => 
     }
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/SubmittedVideo/SubmitTikTokLink`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/SubmitTikTokLink`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ tiktokLink, userId }),
+            body: JSON.stringify({
+                tiktokLink,
+                userId,
+                videoMetaData  
+            }),
         });
 
         if (!response.ok) {
@@ -436,30 +440,32 @@ export const submitTikTokLink = async (tiktokLink: string): Promise<boolean> => 
     }
 };
 
-export const fetchSubmittedVideos = async (): Promise<VideoMetaData[] | null> => {
+export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMetadata[] | null> => {
     const token = localStorage.getItem('authToken');
-
+  
     if (!token) {
-        console.error("User is not authenticated");
-        return null;
+      console.error("User is not authenticated");
+      return null;
     }
-
+  
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/GetSubmittedVideos`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to fetch submitted videos");
-        }
-
-        const data = await response.json();
-        return data as VideoMetaData[];
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/GetSubmittedVideos`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to fetch submitted videos");
+      }
+  
+      const data = await response.json();
+      console.log("Fetched submitted videos with metadata:", data); // Log the data for debugging
+      return data as TikTokLinkSubmissionWithMetadata[];
     } catch (error) {
-        console.error("Error fetching submitted videos:", error);
-        return null;
+      console.error("Error fetching submitted videos:", error);
+      return null;
     }
-};
+  };
+  

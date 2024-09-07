@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchVideoById, fetchVideoUrlById } from "@/service/api";
-import { processAndStoreVideo } from "@/scripts/processVideo";
+import { submitTikTokLink } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import Chatbot from "@/components/ui/chatbot";
 import { AiOutlineRobot } from "react-icons/ai";
+import 'dotenv/config';
 
 const VideoDetailPage: React.FC = () => {
   const params = useParams();
@@ -17,7 +18,7 @@ const VideoDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProcessedVideo = async (videoId: string) => {
-    const res = await fetch(`/api/processVideo?videoId=${videoId}`);
+    const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
     if (!res.ok) {
       throw new Error("Failed to process video");
     }
@@ -28,29 +29,30 @@ const VideoDetailPage: React.FC = () => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          // Fetch video metadata by ID
           let videoResponse = await fetchVideoById(videoId);
-          console.log("Fetched video metadata:", videoResponse);
+          console.log("Fetched video metadata from .NET backend:", videoResponse);
   
-          // If video is not found, process it
           if (!videoResponse || !videoResponse.video) {
-            console.log("Video not found in the database, processing video...");
+            console.log("Video not found in .NET backend, processing video in Node.js backend...");
             videoResponse = await fetchProcessedVideo(videoId);
-            console.log("Processed video metadata:", videoResponse);
+            console.log("Processed video metadata from Node.js backend:", videoResponse);
           }
   
-          console.log("Final video metadata:", videoResponse.video);
+          const finalVideoMetadata = videoResponse?.video || videoResponse;
+          console.log("Final video metadata:", finalVideoMetadata);
   
-          // Check if the metadata and URL are available
-          if (videoResponse && videoResponse.video) {
-            console.log("Setting video data and URL...");
-            setVideoData(videoResponse.video);
-            setVideoUrl(videoResponse.video.s3Url);
+          if (finalVideoMetadata) {
+            setVideoData(finalVideoMetadata);
+            setVideoUrl(finalVideoMetadata.s3Url);
+  
+            const tiktokLink = `https://www.tiktok.com/${videoId}`;  
+            await submitTikTokLink(tiktokLink, finalVideoMetadata);
           } else {
             throw new Error("Failed to fetch or process video metadata.");
           }
         } catch (err: any) {
           setError(err.message);
+          console.error("Error fetching video data:", err);
         } finally {
           setLoading(false);
         }
@@ -60,17 +62,18 @@ const VideoDetailPage: React.FC = () => {
     }
   }, [videoId]);
   
+  
 
   if (loading) {
-    return <p>Loading...</p>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (error) {
-    return <p>{error}</p>;
+    return <div className="flex items-center justify-center min-h-screen">{error}</div>;
   }
 
   if (!videoData || !videoUrl) {
-    return <p>No video details available.</p>;
+    return <div className="flex items-center justify-center min-h-screen">No video details available.</div>;
   }
 
   return (
@@ -82,11 +85,11 @@ const VideoDetailPage: React.FC = () => {
           <video
             src={videoUrl}
             controls
-            className="w-full h-[600px] object-cover rounded-lg mt-2"
+            className="w-full h-[650px] object-cover rounded-lg mt-0.5"
           />
         </div>
 
-        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[700px]">
+        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[665px]">
           <div className="space-y-2 text-xs lg:text-sm text-gray-900 dark:text-gray-100">
             <h2 className="pt-1 text-lg font-semibold mb- text-gray-900 dark:text-gray-100">
               Author Stats
@@ -95,11 +98,10 @@ const VideoDetailPage: React.FC = () => {
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Video Stats
             </h2>
-            <p>Likes: {videoData.diggCount ?? "N/A"}</p>
-            <p>Comments: {videoData.commentCount ?? "N/A"}</p>
-            <p>Shares: {videoData.shareCount ?? "N/A"}</p>
-            <p>Play Count: {videoData.playCount ?? "N/A"}</p>
-            <p>Collect Count: {videoData.collectCount ?? "N/A"}</p>
+            <p>Likes: {videoData.stats?.diggCount ?? videoData?.diggCount ?? "N/A"}</p>
+            <p>Comments: {videoData.stats?.commentCount ?? videoData?.commentCount ?? "N/A"}</p>
+            <p>Shares: {videoData.stats?.shareCount ?? videoData?.shareCount ?? "N/A"}</p>
+            <p>Play Count: {videoData.stats?.playCount ?? videoData?.playCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description

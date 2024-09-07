@@ -137,3 +137,7 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Debug/net8.0/rtbackend.pdb
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Debug/net8.0/rtbackend.genruntimeconfig.cache
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Debug/net8.0/ref/rtbackend.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.AspNetCore.Authorization.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.AspNetCore.Metadata.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll

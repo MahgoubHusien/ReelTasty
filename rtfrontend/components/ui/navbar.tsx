@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation'; // Ensure this import is correct
 import { animate, stagger } from 'framer-motion';
 import { FaBars } from 'react-icons/fa';
 import Link from 'next/link';
@@ -12,15 +13,14 @@ interface NavbarProps {
   currentPage?: string;
 }
 
-const Navbar: React.FC<NavbarProps> = ({
-  currentPage = "home",
-}) => {
+const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [showDropdown, setShowDropdown] = useState(false); 
+  const router = useRouter(); // Ensure this is imported correctly
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const toggleDropdown = () => setShowDropdown(!showDropdown);
@@ -46,21 +46,22 @@ const Navbar: React.FC<NavbarProps> = ({
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    console.log("Checking token in localStorage:", token); 
-
     if (token) {
-      console.log("User is logged in"); 
+      console.log("User is logged in"); // Debugging statement
       setIsLoggedIn(true);
     } else {
-      console.log("User is not logged in"); 
+      console.log("User is not logged in"); // Debugging statement
       setIsLoggedIn(false);
     }
   }, [isLoggedIn]); 
 
+  // Updated handleLogout with console logs for debugging
   const handleLogout = () => {
-    console.log("Logging out"); 
-    localStorage.removeItem("authToken");
-    setIsLoggedIn(false);
+    console.log("Logging out..."); // Debugging log
+    localStorage.removeItem("authToken"); // Remove token
+    setIsLoggedIn(false); // Update logged in state
+    console.log("Redirecting to home..."); // Debugging log
+    router.push("/"); // Redirect to home page
   };
 
   const navItemStyle = (page: string) => ({
@@ -69,7 +70,6 @@ const Navbar: React.FC<NavbarProps> = ({
     fontWeight: 'bold',
     fontSize: '0.75rem',
     transition: 'all 0.3s ease-in-out',
-    borderBottom: currentPage === page ? '2px solid currentColor' : 'none',
   });
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const AuthPage: React.FC = () => {
@@ -21,6 +21,11 @@ const AuthPage: React.FC = () => {
     });
   };
 
+  const handleGoHome = () => {
+    console.log("Redirecting to home...");
+    router.push("/");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -29,9 +34,11 @@ const AuthPage: React.FC = () => {
       return;
     }
 
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5252";
-    const endpoint = isLogin ? `${apiBaseUrl}/api/User/Login` : `${apiBaseUrl}/api/User/Register`;
-    
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const endpoint = isLogin
+      ? `${apiBaseUrl}/api/User/Login`
+      : `${apiBaseUrl}/api/User/Register`;
+
     const requestBody = isLogin
       ? {
           email: formData.email,
@@ -54,18 +61,16 @@ const AuthPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Something went wrong");
+        throw new Error("Email or password is incorrect. Please try again.");
       }
 
       const data = await response.json();
       console.log("Success:", data);
 
       if (isLogin && data.token) {
-        // Store the token in localStorage
         localStorage.setItem("authToken", data.token);
+        router.push("/recipeGeneration"); 
       }
-
-      router.push("/home");
     } catch (error) {
       if (error instanceof Error) {
         setMessage(error.message);
@@ -75,6 +80,12 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -189,13 +200,20 @@ const AuthPage: React.FC = () => {
             <p className="text-center text-sm text-gray-600 mt-4">
               Forgot your password?{" "}
               <button
-                onClick={() => router.push("/forgot-password")}
+                onClick={() => router.push("/forgotPassword")}
                 className="font-medium text-blue-600 hover:text-blue-700 focus:outline-none"
               >
                 Reset Password
               </button>
             </p>
           )}
+
+          <button
+            onClick={handleGoHome} 
+            className="mt-6 w-full py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600"
+          >
+            Go to Home
+          </button>
 
           {message && (
             <p className="text-center text-red-500 mt-4">{message}</p>

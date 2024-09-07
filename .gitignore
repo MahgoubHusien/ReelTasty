@@ -56,6 +56,7 @@ rtfrontend/app/.env
 rtbackend/appsettings.json
 rtbackend/appsettings.Development.json
 rtfrontend/.env
+processVid/.env
 
 # vercel
 .vercel
