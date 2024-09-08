@@ -10,58 +10,61 @@ import { AiOutlineRobot } from "react-icons/ai";
 import 'dotenv/config';
 
 const VideoDetailPage: React.FC = () => {
-  const params = useParams();
-  const videoId = params?.videoId as string;
-  const [videoData, setVideoData] = useState<VideoMetaData | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProcessedVideo = async (videoId: string) => {
-    const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
-    if (!res.ok) {
-      throw new Error("Failed to process video");
-    }
-    return res.json();
-  };
-
-  useEffect(() => {
-    if (videoId) {
-      const fetchData = async () => {
-        try {
-          let videoResponse = await fetchVideoById(videoId);
-          console.log("Fetched video metadata from .NET backend:", videoResponse);
+    const params = useParams();
+    const videoId = params?.videoId as string;
+    const [videoData, setVideoData] = useState<VideoMetaData | null>(null);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitted, setIsSubmitted] = useState<boolean>(false);  
   
-          if (!videoResponse || !videoResponse.video) {
-            console.log("Video not found in .NET backend, processing video in Node.js backend...");
-            videoResponse = await fetchProcessedVideo(videoId);
-            console.log("Processed video metadata from Node.js backend:", videoResponse);
+    const fetchProcessedVideo = async (videoId: string) => {
+      const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
+      if (!res.ok) {
+        throw new Error("Failed to process video");
+      }
+      return res.json();
+    };
+  
+    useEffect(() => {
+      if (videoId) {
+        const fetchData = async () => {
+          try {
+            let videoResponse = await fetchVideoById(videoId);
+            console.log("Fetched video metadata from .NET backend:", videoResponse);
+    
+            if (!videoResponse || !videoResponse.video) {
+              console.log("Video not found in .NET backend, processing video in Node.js backend...");
+              videoResponse = await fetchProcessedVideo(videoId);
+              console.log("Processed video metadata from Node.js backend:", videoResponse);
+            }
+    
+            const finalVideoMetadata = videoResponse?.video || videoResponse;
+            console.log("Final video metadata:", finalVideoMetadata);
+    
+            if (finalVideoMetadata) {
+              setVideoData(finalVideoMetadata);
+              setVideoUrl(finalVideoMetadata.s3Url);
+              
+              if (!isSubmitted) {
+                const tiktokLink = `https://www.tiktok.com/${videoId}`;  
+                await submitTikTokLink(tiktokLink, finalVideoMetadata);
+                setIsSubmitted(true); 
+              }
+            } else {
+              throw new Error("Failed to fetch or process video metadata.");
+            }
+          } catch (err: any) {
+            setError(err.message);
+            console.error("Error fetching video data:", err);
+          } finally {
+            setLoading(false);
           }
-  
-          const finalVideoMetadata = videoResponse?.video || videoResponse;
-          console.log("Final video metadata:", finalVideoMetadata);
-  
-          if (finalVideoMetadata) {
-            setVideoData(finalVideoMetadata);
-            setVideoUrl(finalVideoMetadata.s3Url);
-  
-            const tiktokLink = `https://www.tiktok.com/${videoId}`;  
-            await submitTikTokLink(tiktokLink, finalVideoMetadata);
-          } else {
-            throw new Error("Failed to fetch or process video metadata.");
-          }
-        } catch (err: any) {
-          setError(err.message);
-          console.error("Error fetching video data:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-  
-      fetchData();
-    }
-  }, [videoId]);
-  
+        };
+    
+        fetchData();
+      }
+    }, [videoId, isSubmitted]); 
   
 
   if (loading) {

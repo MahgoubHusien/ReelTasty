@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation'; // Ensure this import is correct
+import { useRouter } from 'next/navigation';
 import { animate, stagger } from 'framer-motion';
 import { FaBars } from 'react-icons/fa';
 import Link from 'next/link';
-import Image from 'next/image';
-import userProfilePic from '/public/major.png';
 import ThemeToggle from "@/components/ui/themeswitcher";
 
 interface NavbarProps {
@@ -18,9 +16,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [prevScrollPos, setPrevScrollPos] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
-  const [showDropdown, setShowDropdown] = useState(false); 
-  const router = useRouter(); // Ensure this is imported correctly
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const router = useRouter();
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const toggleDropdown = () => setShowDropdown(!showDropdown);
@@ -46,26 +45,49 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
+
     if (token) {
-      console.log("User is logged in"); // Debugging statement
+      fetchUsername(token);
       setIsLoggedIn(true);
     } else {
-      console.log("User is not logged in"); // Debugging statement
       setIsLoggedIn(false);
     }
-  }, [isLoggedIn]); 
+  }, [isLoggedIn]);
 
-  // Updated handleLogout with console logs for debugging
+  const fetchUsername = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/User/Profile`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUsername(data.userName || '');
+      } else if (response.status === 401) {
+        console.log("Token expired or unauthorized. Logging out...");
+        handleLogout();
+      } else {
+        console.error("Failed to fetch username: ", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching username:", error);
+      handleLogout();
+    }
+  };
+
   const handleLogout = () => {
-    console.log("Logging out..."); // Debugging log
-    localStorage.removeItem("authToken"); // Remove token
-    setIsLoggedIn(false); // Update logged in state
-    console.log("Redirecting to home..."); // Debugging log
-    router.push("/"); // Redirect to home page
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("username");
+    setIsLoggedIn(false);
+    setUsername('');
+    router.push("/auth?view=login");
   };
 
   const navItemStyle = (page: string) => ({
-    color: 'inherit', 
+    color: 'inherit',
     fontFamily: "'Poppins', sans-serif",
     fontWeight: 'bold',
     fontSize: '0.75rem',
@@ -83,7 +105,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
     >
       <div className="flex items-center justify-between px-8 py-4">
         <div className="flex items-center">
-          {/* Logo Element */}
           <Link
             href="/"
             className="nav-item transition-colors px-4 py-2 text-xl font-bold text-foreground dark:text-white"
@@ -104,36 +125,35 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
         <div className="hidden md:flex items-center space-x-4">
         {isLoggedIn ? (
           <div className="relative inline-block">
-          <div
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden border-2 border-gray-300 dark:border-gray-700 cursor-pointer flex items-center justify-center bg-white dark:bg-gray-800 shadow-md"
-            onClick={toggleDropdown}
-          >
-            <Image
-              src={userProfilePic}
-              alt="User Profile"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          {showDropdown && (
             <div
-              className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-20 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2 z-10 text-center"
-              onMouseEnter={() => setShowDropdown(true)}
-              onMouseLeave={() => setShowDropdown(false)}
+              className="px-4 py-2 rounded-lg border-2 cursor-pointer flex items-center justify-center shadow-md"
+              style={{
+                borderColor: "#CBACF9",
+                backgroundColor: "white",
+              }}
+              onClick={toggleDropdown}
             >
-              <Link href="/profile">
-                <span className="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Profile
-                </span>
-              </Link>
-              <span
-                className="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                onClick={handleLogout}
-              >
-                Logout
+              <span className="text-gray-800 dark:text-white font-bold text-sm">
+                {username.length > 8
+                  ? `${username.charAt(0).toUpperCase()}${username.slice(1, 7)}...`
+                  : username.charAt(0).toUpperCase() + username.slice(1)}
               </span>
             </div>
-          )}
-        </div>
+            {showDropdown && (
+              <div
+              className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-16 bg-white dark:bg-gray-800 shadow-lg rounded-lg z-10 text-center"
+                onMouseEnter={() => setShowDropdown(true)}
+                onMouseLeave={() => setShowDropdown(false)}
+              >
+                <span
+                  className="block px-2 py-2 text-gray-800 dark:text-gray-200 cursor-pointer"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </span>
+              </div>
+            )}
+          </div>
         ) : (
           <Link
             href="/auth?view=login"
@@ -169,21 +189,29 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
           <Link href="/trendingFoods" className="nav-item py-4 w-full text-center" style={navItemStyle('trendingFoods')} onClick={toggleMenu}>Trending Foods</Link>
           <Link href="/yourRecipes" className="nav-item py-4 w-full text-center" style={navItemStyle('yourRecipes')} onClick={toggleMenu}>Your Recipes</Link>
           {isLoggedIn ? (
-            <div className="nav-item py-4 w-full text-center">
-              <Image src={userProfilePic} alt="User Profile" className="w-8 h-8 rounded-full object-cover mx-auto cursor-pointer" onClick={toggleDropdown} />
+            <div className="nav-item py-4 w-50px text-center">
+              <div
+                className="px-4 py-2 rounded-lg border-2 cursor-pointer shadow-md flex items-center justify-center"
+                style={{
+                  borderColor: "#CBACF9",
+                  backgroundColor: "var(--color-bg-dark-mode)",
+                }}
+                onClick={toggleDropdown}
+              >
+                <span className="text-sm font-bold text-gray-800 dark:text-white">
+                  {username.length > 8
+                    ? `${username.charAt(0).toUpperCase()}${username.slice(1, 7)}...`
+                    : username.charAt(0).toUpperCase() + username.slice(1)}
+                </span>
+              </div>
               {showDropdown && (
                 <div
-                  className="absolute right-0 md:right-0 md:left-auto left-1/2 transform md:translate-x-0 -translate-x-1/2 mt-2 w-20 bg-white dark:bg-gray-800 shadow-lg rounded-lg py-2"
+                  className="absolute right-0 md:right-0 md:left-auto left-1/2 transform md:translate-x-0 -translate-x-1/2 mt-2 w-16 bg-white dark:bg-gray-800 shadow-lg rounded-lg"
                   onMouseEnter={() => setShowDropdown(true)}
                   onMouseLeave={() => setShowDropdown(false)}
                 >
-                  <Link href="/profile">
-                    <span className="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                      Profile
-                    </span>
-                  </Link>
                   <span
-                    className="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    className="block px-2 py-2 text-gray-800 dark:text-gray-200 cursor-pointer"
                     onClick={handleLogout}
                   >
                     Logout

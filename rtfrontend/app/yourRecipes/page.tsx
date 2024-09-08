@@ -31,35 +31,44 @@ const YourVideosPage: React.FC = () => {
       router.push("/auth?view=login");
       return;
     }
-
+  
     const fetchAllData = async () => {
       try {
         const userId = await fetchUserId();
         if (!userId) {
           throw new Error("User ID is missing");
         }
-
+  
         const [recentlySeen, saved, submitted] = await Promise.all([
           fetchRecentlySeenVideos(),
           fetchSavedVideos(),
           fetchSubmittedVideos()
         ]);
-
+  
+        console.log("Recently Seen Videos:", recentlySeen);
+        console.log("Saved Videos:", saved);
+        console.log("Submitted Videos:", submitted);
+  
         setRecentlySeenVideos(recentlySeen || []);
         setSavedVideos(saved || []);
-        setSubmittedVideos(submitted || []);
+  
+        const submittedVideoMetaData = submitted?.map(submission => submission.videoMetaData) || [];
+        console.log("Extracted Submitted Video Metadata:", submittedVideoMetaData); 
+        setSubmittedVideos(submittedVideoMetaData);
+  
       } catch (err) {
         setError("Failed to fetch videos. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
-
+  
     if (isLoggedIn && !initialLoading) {
       fetchAllData();
     }
   }, [isLoggedIn, initialLoading, router]);
-
+  
+        
   if (initialLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center">

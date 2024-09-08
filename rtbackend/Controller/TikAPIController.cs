@@ -8,6 +8,8 @@ using rtbackend.Models;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer; 
+using Newtonsoft.Json;
+
 
 
 [ApiController]
@@ -317,7 +319,7 @@ public class TikAPIController : ControllerBase
             return Unauthorized("User ID does not match.");
         }
 
-        var result = await _tikApi.SubmitTikTokLinkAsync(userId, model.TikTokLink);
+        var result = await _tikApi.SubmitTikTokLinkAsync(userId, model.TikTokLink, model.VideoMetadata.VideoId); 
         if (result)
         {
             return Ok("TikTok link submitted successfully.");

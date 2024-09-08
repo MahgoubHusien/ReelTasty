@@ -21,11 +21,6 @@ const AuthPage: React.FC = () => {
     });
   };
 
-  const handleGoHome = () => {
-    console.log("Redirecting to home...");
-    router.push("/");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -61,7 +56,8 @@ const AuthPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Email or password is incorrect. Please try again.");
+        const errorMessage = await response.text();
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -69,7 +65,9 @@ const AuthPage: React.FC = () => {
 
       if (isLogin && data.token) {
         localStorage.setItem("authToken", data.token);
-        router.push("/recipeGeneration"); 
+        router.push("/recipeGeneration");
+      } else if (!isLogin && data.message) {
+        router.push("/confirmEmail");
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -79,13 +77,6 @@ const AuthPage: React.FC = () => {
       }
     }
   };
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(""), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
@@ -207,13 +198,6 @@ const AuthPage: React.FC = () => {
               </button>
             </p>
           )}
-
-          <button
-            onClick={handleGoHome} 
-            className="mt-6 w-full py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600"
-          >
-            Go to Home
-          </button>
 
           {message && (
             <p className="text-center text-red-500 mt-4">{message}</p>

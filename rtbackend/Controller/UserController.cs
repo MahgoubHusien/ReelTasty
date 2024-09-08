@@ -63,11 +63,22 @@ namespace rtbackend.Controllers
         {
             if (ModelState.IsValid)
             {
+                // Check if passwords match
                 if (model.Password != model.ConfirmPassword)
                 {
                     return BadRequest("Passwords do not match.");
                 }
 
+                // Check if the email is already registered
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    // Log message to check if this condition is triggered
+                    Console.WriteLine($"Email {model.Email} is already registered.");
+                    return BadRequest("Email is already registered.");
+                }
+
+                // Create a new user
                 var user = new User
                 {
                     UserName = model.Username,
@@ -78,13 +89,15 @@ namespace rtbackend.Controllers
 
                 if (result.Succeeded)
                 {
+                    // Generate email confirmation token
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     var callbackUrl = Url.Action(nameof(ConfirmEmail), "User",
                         new { userId = user.Id, code }, Request.Scheme);
 
+                    // Send email confirmation
                     await _emailSender.SendEmailAsync(
-                        model.Email, 
-                        "Confirm your email", 
+                        model.Email,
+                        "Confirm your email",
                         $"Please confirm your account by clicking <a href='{callbackUrl}'>here</a>.");
 
                     return Ok(new { message = "User registered successfully. Please check your email to confirm your account." });
@@ -95,6 +108,7 @@ namespace rtbackend.Controllers
 
             return BadRequest("Invalid model state");
         }
+
 
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] Login model)
@@ -149,6 +163,26 @@ namespace rtbackend.Controllers
 
             return BadRequest("Error confirming email.");
         }
+
+        [HttpGet("CheckEmailConfirmationStatus")]
+        public async Task<IActionResult> CheckEmailConfirmationStatus(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest("Invalid user ID.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            bool isEmailConfirmed = await _userManager.IsEmailConfirmedAsync(user);
+
+            return Ok(new { IsEmailConfirmed = isEmailConfirmed });
+        }
+
 
         [HttpPost("ResendConfirmationEmail")]
         public async Task<IActionResult> ResendConfirmationEmail([FromBody] ResendConfirmationEmail model)

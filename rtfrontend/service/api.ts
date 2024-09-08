@@ -423,9 +423,9 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                tiktokLink,
-                userId,
-                videoMetaData  
+                TikTokLink: tiktokLink,
+                UserId: userId, 
+                VideoMetaData: videoMetaData
             }),
         });
 
@@ -439,6 +439,7 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         return false;
     }
 };
+
 
 export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMetadata[] | null> => {
     const token = localStorage.getItem('authToken');
@@ -461,7 +462,7 @@ export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMe
       }
   
       const data = await response.json();
-      console.log("Fetched submitted videos with metadata:", data); // Log the data for debugging
+      console.log("Fetched submitted videos with metadata:", data);
       return data as TikTokLinkSubmissionWithMetadata[];
     } catch (error) {
       console.error("Error fetching submitted videos:", error);

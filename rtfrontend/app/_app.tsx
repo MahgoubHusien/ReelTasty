@@ -1,20 +1,50 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import type { AppProps } from "next/app";
 
+const INACTIVITY_LIMIT = 45 * 60 * 1000; 
+
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  let timeoutId: NodeJS.Timeout;
+
+  const handleInactivityLogout = useCallback(() => {
+    console.log("45 minutes of inactivity, logging out and redirecting...");
+    localStorage.removeItem("authToken");
+    router.push("/"); 
+  }, [router]);
+
+  const resetTimer = useCallback(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    timeoutId = setTimeout(handleInactivityLogout, INACTIVITY_LIMIT);
+  }, [handleInactivityLogout]);
+
+  const trackUserActivity = useCallback(() => {
+    resetTimer();
+  }, [resetTimer]);
 
   useEffect(() => {
-    // Check if the token is missing (logged out)
     const token = localStorage.getItem("authToken");
-
+    
     if (!token) {
-      // If token is missing, redirect to the home page
       console.log("No token found, redirecting to home...");
       router.push("/");
     }
-  }, [router]);
+
+    resetTimer();
+
+    window.addEventListener("mousemove", trackUserActivity);
+    window.addEventListener("keydown", trackUserActivity);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("mousemove", trackUserActivity);
+      window.removeEventListener("keydown", trackUserActivity);
+    };
+  }, [router, resetTimer, trackUserActivity]);
 
   return <Component {...pageProps} />;
 }

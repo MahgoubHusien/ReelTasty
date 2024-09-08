@@ -23,12 +23,12 @@ const TikTokDetailPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); 
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null); 
 
   useEffect(() => {
-    // Check if the user is logged in by checking for the authToken in localStorage
     const token = localStorage.getItem("authToken");
-    setIsLoggedIn(!!token); // If the token exists, user is logged in
+    setIsLoggedIn(!!token);
 
     if (videoId) {
       const fetchData = async () => {
@@ -36,7 +36,7 @@ const TikTokDetailPage: React.FC = () => {
           console.log("Fetching video data for videoId:", videoId);
 
           const data = await fetchVideoById(videoId);
-          const videoMetadata = data?.video; // Access the video data
+          const videoMetadata = data?.video;
 
           if (videoMetadata) {
             setVideoData(videoMetadata);
@@ -45,13 +45,13 @@ const TikTokDetailPage: React.FC = () => {
             console.log("Fetched video URL:", url);
 
             if (isLoggedIn) {
-              // Only check if the video is saved if the user is logged in
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
 
-              const userId = await fetchUserId();
-              if (userId) {
-                const addedToRecentlySeen = await addToRecentlySeen(userId, videoId);
+              const fetchedUserId = await fetchUserId();
+              if (fetchedUserId) {
+                setUserId(fetchedUserId); 
+                const addedToRecentlySeen = await addToRecentlySeen(fetchedUserId, videoId);
                 if (!addedToRecentlySeen) {
                   console.error("Failed to add video to recently seen.");
                 }
@@ -75,7 +75,7 @@ const TikTokDetailPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!isLoggedIn) {
-      alert("Please log in to save videos."); // Alert user to log in if they are not logged in
+      alert("Please log in to save videos.");
       return;
     }
 
@@ -218,7 +218,7 @@ const TikTokDetailPage: React.FC = () => {
             </h2>
           </div>
           <div className="flex-grow h-full overflow-y-auto lg:overflow-hidden">
-            <Chatbot videoId={videoId ?? ""} />
+            <Chatbot videoId={videoId ?? ""} userId={userId ?? ""} />
           </div>
         </div>
       </div>

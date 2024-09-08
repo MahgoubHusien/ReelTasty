@@ -1,50 +1,90 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AiOutlineSend } from 'react-icons/ai'; 
+import { AiOutlineSend } from 'react-icons/ai';
+import axios from 'axios';
 
 interface ChatbotProps {
   videoId: string;
+  userId?: string;
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ videoId }) => {
+const Chatbot: React.FC<ChatbotProps> = ({ videoId, userId }) => {
   const [messages, setMessages] = useState<{ sender: string, text: string }[]>([]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
   const chatWindowRef = useRef<HTMLDivElement>(null);
 
-  // Load chat history for the specific videoId
-  useEffect(() => {
-    const savedMessages = localStorage.getItem(`chat_${videoId}`);
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
-  }, [videoId]);
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;  
+  const nodeApiBaseUrl = process.env.NEXT_PUBLIC_NODE_API_BASE_URL;  
 
-  // Save chat history whenever messages update
   useEffect(() => {
-    localStorage.setItem(`chat_${videoId}`, JSON.stringify(messages));
+    if (userId) {
+      const loadChatHistory = async () => {
+        setLoading(true);
+        try {
+          const response = await axios.get(`${apiBaseUrl}/api/Chat/${userId}/${videoId}`);
+          setMessages(response.data.messages || []);
+          scrollToBottom();
+        } catch (error) {
+          console.error('Error loading chat history', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadChatHistory();
+    }
+  }, [userId, videoId, apiBaseUrl]);
+
+  const scrollToBottom = () => {
     if (chatWindowRef.current) {
       chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
     }
-  }, [messages, videoId]);
+  };
 
-  const handleSend = () => {
-    if (input.trim() === '') return;
+  const handleSend = async () => {
+    if (input.trim() === '' || loading) return;
 
     const newMessages = [...messages, { sender: 'user', text: input }];
     setMessages(newMessages);
     setInput('');
 
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        { sender: 'bot', text: 'This is a bot response!' }
-      ]);
-    }, 500);
-  };
+    setLoading(true);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSend();
+    try {
+      console.log('Sending user message to Node.js for OpenAI response:', input);
+
+      const response = await axios.post(`${nodeApiBaseUrl}/api/chat`, {
+        userId: userId || 'anonymous',  
+        videoId: videoId,
+        message: input,  
+      });
+
+      const botMessage = response.data.botMessage;
+      const updatedMessages = [
+        ...newMessages,
+        { sender: 'bot', text: botMessage }
+      ];
+
+      setMessages(updatedMessages);
+
+      if (userId) {
+        console.log('Saving chat history to .NET backend...');
+        
+        await axios.post(`${apiBaseUrl}/api/Chat/save`, {
+          userId,
+          videoId,
+          messages: updatedMessages.map((message) => ({ sender: message.sender, text: message.text })),
+        });
+        console.log('Chat history saved successfully.');
+      }
+    } catch (error) {
+      console.error('Error handling chat:', error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: 'bot', text: 'Sorry, something went wrong.' }
+      ]);
+    } finally {
+      setLoading(false);
+      scrollToBottom();
     }
   };
 
@@ -52,10 +92,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ videoId }) => {
     <div className="chatbot-container">
       <div className="chat-window" ref={chatWindowRef}>
         {messages.map((message, index) => (
-          <div
-            key={index}
-            className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}
-          >
+          <div key={index} className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}>
             {message.text}
           </div>
         ))}
@@ -65,11 +102,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ videoId }) => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown} 
           placeholder="Type your message..."
-          className="input-field"
+          disabled={loading}
         />
-        <button onClick={handleSend} className="send-button">
+        <button onClick={handleSend} disabled={loading || input.trim() === ''}>
           <AiOutlineSend />
         </button>
       </div>

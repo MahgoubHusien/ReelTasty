@@ -141,3 +141,4 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.AspNetCore.Metadata.dll
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Newtonsoft.Json.dll

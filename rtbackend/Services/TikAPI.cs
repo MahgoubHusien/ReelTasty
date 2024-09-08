@@ -308,14 +308,14 @@ public class TikApi
         var uploadRequest = new TransferUtilityUploadRequest
         {
             FilePath = filePath,
-            BucketName = "your-bucket-name",
+            BucketName = _bucketName,
             Key = $"{videoId}.mp4",
             ContentType = "video/mp4"
         };
 
         await transferUtility.UploadAsync(uploadRequest);
 
-        return $"https://your-bucket-name.s3.amazonaws.com/{videoId}.mp4";
+        return $"https://{_bucketName}.s3.amazonaws.com/{videoId}.mp4";
     }
     public async Task RemoveVideoAsync(string videoId)
     {
@@ -427,58 +427,70 @@ public class TikApi
         return results;
     }
 
-    public async Task<bool> SubmitTikTokLinkAsync(string userId, string tiktokLink)
+    public async Task<bool> SubmitTikTokLinkAsync(string userId, string tiktokLink, string videoId)
     {
         using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
 
         var query = @"
-            INSERT INTO submitted_videos (user_id, tiktok_link)
-            VALUES (@UserId, @TikTokLink)";
+            INSERT INTO submitted_videos (user_id, tiktok_link, video_id)
+            VALUES (@UserId, @TikTokLink, @VideoId)";
 
         using var cmd = new NpgsqlCommand(query, connection);
         cmd.Parameters.AddWithValue("@UserId", Guid.Parse(userId));
         cmd.Parameters.AddWithValue("@TikTokLink", tiktokLink);
+        cmd.Parameters.AddWithValue("@VideoId", videoId);
 
         var rowsAffected = await cmd.ExecuteNonQueryAsync();
         return rowsAffected > 0;
     }
 
-    public async Task<List<SubmittedVideo>> GetSubmittedVideosByUserAsync(string userId)
+    public async Task<List<SubmittedVideoWithMetadata>> GetSubmittedVideosByUserAsync(string userId)
     {
-        try
+        using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var query = @"
+            SELECT sv.id, sv.user_id, sv.tiktok_link, sv.submitted_at, tv.video_id, tv.author, tv.description, tv.hashtags, tv.s3_url, 
+                tv.digg_count, tv.comment_count, tv.share_count, tv.play_count, tv.collect_count, tv.create_time
+            FROM submitted_videos sv
+            LEFT JOIN tiktok_videos tv ON sv.video_id = tv.video_id
+            WHERE sv.user_id = @UserId";
+
+        using var cmd = new NpgsqlCommand(query, connection);
+        cmd.Parameters.AddWithValue("@UserId", userId);
+
+        using var reader = await cmd.ExecuteReaderAsync();
+        var results = new List<SubmittedVideoWithMetadata>();
+
+        while (await reader.ReadAsync())
         {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-
-            var query = @"
-                SELECT id, user_id, tiktok_link, submitted_at
-                FROM submitted_videos
-                WHERE user_id = @UserId";
-
-            using var cmd = new NpgsqlCommand(query, connection);
-            cmd.Parameters.AddWithValue("@UserId", userId);  
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            var submittedVideos = new List<SubmittedVideo>();
-
-            while (await reader.ReadAsync())
+            var videoMetaData = reader.IsDBNull(4) ? null : new VideoMetadata
             {
-                submittedVideos.Add(new SubmittedVideo
-                {
-                    Id = reader.GetInt32(0),
-                    UserId = reader.GetString(1),  
-                    TikTokLink = reader.GetString(2),
-                    SubmittedAt = reader.GetDateTime(3)
-                });
-            }
+                VideoId = reader.GetString(4),
+                Author = reader.IsDBNull(5) ? null : reader.GetString(5),
+                Description = reader.IsDBNull(6) ? null : reader.GetString(6),
+                Hashtags = reader.IsDBNull(7) ? null : reader.GetString(7),
+                S3Url = reader.IsDBNull(8) ? null : reader.GetString(8),
+                DiggCount = reader.IsDBNull(9) ? null : reader.GetInt32(9),
+                CommentCount = reader.IsDBNull(10) ? null : reader.GetInt32(10),
+                ShareCount = reader.IsDBNull(11) ? null : reader.GetInt32(11),
+                PlayCount = reader.IsDBNull(12) ? null : reader.GetInt32(12),
+                CollectCount = reader.IsDBNull(13) ? null : reader.GetInt32(13),
+                CreateTime = reader.IsDBNull(14) ? (DateTime?)null : reader.GetDateTime(14),
+            };
 
-            return submittedVideos;
+            results.Add(new SubmittedVideoWithMetadata
+            {
+                Id = reader.GetInt32(0),
+                UserId = reader.GetString(1),
+                TikTokLink = reader.GetString(2),
+                SubmittedAt = reader.GetDateTime(3),
+                VideoMetaData = videoMetaData
+            });
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetSubmittedVideosByUserAsync: {ex.Message}");
-            throw;
-        }
+
+        return results;
     }
+
 }

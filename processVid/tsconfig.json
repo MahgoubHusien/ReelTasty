@@ -1,14 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES6",
     "module": "commonjs",
-    "strict": true,
+    "target": "es6",
     "esModuleInterop": true,
+    "strict": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",  // Output directory for compiled files
-    "rootDir": "./"      // Use the project root if not using src/
+    "outDir": "./dist"
   },
-  "include": ["**/*.ts"],  // Includes all TypeScript files in the project
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"]
 }
