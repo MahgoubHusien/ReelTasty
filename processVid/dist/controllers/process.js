@@ -46,9 +46,7 @@ const hashtags = [
     "healthyfood",
     "tiktokfood"
 ];
-// Excluded keywords
 const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
-// Utility function to save video metadata to the database
 const storeVideoMetadataInDB = (videoMetadata) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -81,7 +79,6 @@ const storeVideoMetadataInDB = (videoMetadata) => __awaiter(void 0, void 0, void
         console.error('Error storing video metadata:', err);
     }
 });
-// Utility function to upload video to S3
 const uploadVideoToS3 = (filePath, videoId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const fileContent = fs_1.default.readFileSync(filePath);
@@ -104,7 +101,6 @@ const uploadVideoToS3 = (filePath, videoId) => __awaiter(void 0, void 0, void 0,
         throw err;
     }
 });
-// Main function to process a single hashtag
 const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
@@ -119,7 +115,6 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
             const videos = ((_a = response === null || response === void 0 ? void 0 : response.json) === null || _a === void 0 ? void 0 : _a.itemList) || [];
             for (const item of videos) {
                 const description = item.desc.toLowerCase();
-                // Skip video if it contains any of the excluded keywords
                 if (excludedKeywords.some(keyword => description.includes(keyword))) {
                     console.log(`Video with ID ${item.id} excluded due to matching keywords.`);
                     continue;
@@ -140,7 +135,6 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
                 };
                 const downloadAddr = item.video.downloadAddr;
                 const filePath = path_1.default.join('/tmp', `${videoMetadata.videoId}.mp4`);
-                // Download and upload video
                 if (response.saveVideo) {
                     yield response.saveVideo(downloadAddr, filePath);
                     console.log(`Video downloaded to: ${filePath}`);
@@ -152,7 +146,6 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
                     }
                 }
             }
-            // Fetch next items if available
             if (response.nextItems) {
                 console.log('Fetching next items...');
                 response = yield response.nextItems();
@@ -167,7 +160,6 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
         console.error(`Error processing hashtag videos for: ${hashtag}`, err);
     }
 });
-// Route to fetch and process videos by hashtag
 app.get('/fetchHashtagVideos', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         for (const hashtag of hashtags) {

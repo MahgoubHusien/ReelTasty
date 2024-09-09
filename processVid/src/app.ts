@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { getOpenAIResponse } from "./services/openai";
+import { transcribeVideoFromS3 } from "./services/transcription"; 
 
 dotenv.config();
 
@@ -32,4 +33,22 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-app.listen(port, () => {});
+app.post("/api/transcribe", async (req, res) => {
+  const { videoId } = req.body;
+
+  if (!videoId) {
+    return res.status(400).json({ error: "Video ID is required" });
+  }
+
+  try {
+    const transcription = await transcribeVideoFromS3(videoId); 
+    return res.status(200).json({ transcription });
+  } catch (error) {
+    console.error("Error transcribing video:", error);
+    return res.status(500).json({ error: "Failed to transcribe video" });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

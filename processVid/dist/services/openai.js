@@ -15,26 +15,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getOpenAIResponse = getOpenAIResponse;
 const openai_1 = __importDefault(require("openai"));
 const dotenv_1 = __importDefault(require("dotenv"));
-// Load environment variables from .env
 dotenv_1.default.config();
-// Initialize the OpenAI client
 const openai = new openai_1.default({
-    apiKey: process.env.OPENAI_API_KEY, // Set your API key from environment variables
+    apiKey: process.env.OPENAI_API_KEY || '',
 });
 function getOpenAIResponse(userMessage) {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b;
+        var _a, _b, _c;
+        if (!openai.apiKey) {
+            throw new Error("OpenAI API key is missing. Please set OPENAI_API_KEY in the environment.");
+        }
         try {
             const response = yield openai.chat.completions.create({
-                model: "gpt-4o-mini", // Use the appropriate model
+                model: process.env.OPENAI_MODEL || '',
                 messages: [{ role: "user", content: userMessage }],
             });
-            const botMessage = (_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content;
+            const botMessage = (_c = (_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.trim();
+            if (!botMessage) {
+                throw new Error("No response from OpenAI.");
+            }
             return botMessage;
         }
         catch (error) {
             console.error("Error with OpenAI API request:", error);
-            throw new Error("OpenAI API request failed");
+            throw new Error("Failed to fetch response from OpenAI.");
         }
     });
 }

@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -20,6 +20,82 @@ public class ChatController : ControllerBase
 
         _connectionString = $"Host={host};Port={port};Username={user};Password={password};Database={database}";
         Console.WriteLine("Connection String: " + _connectionString);
+    }
+
+    [HttpPost("saveTranscription")]
+    public async Task<IActionResult> SaveTranscription([FromBody] TranscriptionModel model)
+    {
+        if (string.IsNullOrEmpty(model.VideoId) || string.IsNullOrEmpty(model.TranscriptionText))
+        {
+            return BadRequest("Video ID and transcription text cannot be empty.");
+        }
+
+        try
+        {
+            await SaveTranscriptionToDb(model.VideoId, model.TranscriptionText);
+            return Ok("Transcription saved successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving transcription: {ex.Message}");
+            return StatusCode(500, $"Error saving transcription: {ex.Message}");
+        }
+    }
+
+    [HttpGet("getTranscription/{videoId}")]
+    public async Task<IActionResult> GetTranscription(string videoId)
+    {
+        try
+        {
+            var transcription = await GetTranscriptionFromDb(videoId);
+            if (transcription == null)
+            {
+                return NotFound("Transcription not found.");
+            }
+            return Ok(transcription);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving transcription: {ex.Message}");
+            return StatusCode(500, $"Error retrieving transcription: {ex.Message}");
+        }
+    }
+
+    private async Task SaveTranscriptionToDb(string videoId, string transcriptionText)
+    {
+        using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var query = @"
+                INSERT INTO transcriptions (video_id, transcription_text)
+                VALUES (@videoId, @transcriptionText)
+                ON CONFLICT (video_id) 
+                DO UPDATE SET transcription_text = EXCLUDED.transcription_text, updated_at = CURRENT_TIMESTAMP";
+
+            using (var command = new NpgsqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@videoId", videoId);
+                command.Parameters.AddWithValue("@transcriptionText", transcriptionText);
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+    }
+
+    private async Task<string?> GetTranscriptionFromDb(string videoId)
+    {
+        using (var connection = new NpgsqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+            var query = "SELECT transcription_text FROM transcriptions WHERE video_id = @videoId";
+
+            using (var command = new NpgsqlCommand(query, connection))
+            {
+                command.Parameters.AddWithValue("@videoId", videoId);
+                var result = await command.ExecuteScalarAsync();
+
+                return result != null ? result.ToString() : null;
+            }
+        }
     }
 
     [HttpPost("save")]
@@ -122,6 +198,12 @@ public class ChatController : ControllerBase
             throw new System.Exception($"Error retrieving chat history from the database: {ex.Message}");
         }
     }
+}
+
+public class TranscriptionModel
+{
+    public string VideoId { get; set; }
+    public string TranscriptionText { get; set; }
 }
 
 public class ChatMessageModel

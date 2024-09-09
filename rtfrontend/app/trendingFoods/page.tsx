@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import VideoGrid from "../../components/ui/VideoGrid";
 import { fetchVideos } from "../../service/api";
 
-const hashtags = [ "food", "cooking", "foodtok", "recipesoftiktok", "baking", "healthyfood", "tiktokfood"];
+const hashtags = [ "food", "cooking", "recipesoftiktok", "baking", "healthyfood", "tiktokfood"];
   
 
 const TrendingFoodsPage: React.FC = () => {

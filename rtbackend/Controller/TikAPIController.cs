@@ -17,10 +17,47 @@ using Newtonsoft.Json;
 public class TikAPIController : ControllerBase
 {
     private readonly TikApi _tikApi;
-
+    
     public TikAPIController(TikApi tikApi)
     {
         _tikApi = tikApi;
+    }
+
+    [HttpPost("saveTranscription")]
+    public async Task<IActionResult> SaveTranscription([FromBody] TranscriptionModel model)
+    {
+        if (string.IsNullOrEmpty(model.TranscriptionText))
+        {
+            return BadRequest("Transcription text is required.");
+        }
+
+        try
+        {
+            await _tikApi.SaveTranscription(model.UserId, model.VideoId, model.TranscriptionText);
+            return Ok("Transcription saved successfully.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error saving transcription: {ex.Message}");
+        }
+    }
+
+    [HttpGet("getTranscription/{userId}/{videoId}")]
+    public async Task<IActionResult> GetTranscription(string userId, string videoId)
+    {
+        try
+        {
+            var transcription = await _tikApi.GetTranscription(userId, videoId);
+            if (string.IsNullOrEmpty(transcription))
+            {
+                return NotFound("Transcription not found.");
+            }
+            return Ok(new { transcription });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error retrieving transcription: {ex.Message}");
+        }
     }
 
     [HttpPost("AddVideo")]
@@ -346,6 +383,12 @@ public class TikAPIController : ControllerBase
         return Ok(videos);
     }
 
+    public class TranscriptionModel
+    {
+        public string UserId { get; set; }
+        public string VideoId { get; set; }
+        public string TranscriptionText { get; set; }
+    }
 
     public class RecentlySeenRequest
     {

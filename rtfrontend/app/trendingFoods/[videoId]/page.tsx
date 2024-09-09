@@ -3,15 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Chatbot from "@/components/ui/chatbot";
-import {
-  fetchVideoById,
-  fetchVideoUrlById,
-  saveVideoForUser,
-  unsaveVideoForUser,
-  checkIfVideoIsSaved,
-  addToRecentlySeen,
-  fetchUserId,
-} from "@/service/api";
+import { fetchVideoById, fetchVideoUrlById, saveVideoForUser, unsaveVideoForUser, checkIfVideoIsSaved, addToRecentlySeen, fetchUserId, fetchTranscription, saveTranscription, generateRecipeFromGPT, } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import { AiOutlineRobot } from "react-icons/ai";
 
@@ -24,7 +16,9 @@ const TikTokDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null); 
+  const [userId, setUserId] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState<string | null>(null); 
+  const [recipe, setRecipe] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -44,14 +38,26 @@ const TikTokDetailPage: React.FC = () => {
             setVideoUrl(videoMetadata.s3Url || url);
             console.log("Fetched video URL:", url);
 
+            const transcriptionData = await fetchTranscription(videoId);
+            setTranscription(transcriptionData);
+
+            const recipeData = await generateRecipeFromGPT(
+              transcriptionData,
+              videoMetadata.description
+            );
+            setRecipe(recipeData);
+
             if (isLoggedIn) {
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
 
               const fetchedUserId = await fetchUserId();
               if (fetchedUserId) {
-                setUserId(fetchedUserId); 
-                const addedToRecentlySeen = await addToRecentlySeen(fetchedUserId, videoId);
+                setUserId(fetchedUserId);
+                const addedToRecentlySeen = await addToRecentlySeen(
+                  fetchedUserId,
+                  videoId
+                );
                 if (!addedToRecentlySeen) {
                   console.error("Failed to add video to recently seen.");
                 }
@@ -151,6 +157,7 @@ const TikTokDetailPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Video Meta Data Section */}
         <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[700px]">
           <div className="space-y-2 text-xs lg:text-sm text-gray-900 dark:text-gray-100">
             <h2 className="pt-1 text-lg font-semibold mb- text-gray-900 dark:text-gray-100">
@@ -199,13 +206,13 @@ const TikTokDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Video Transcription Section */}
+        {/* Video Transcription and Recipe Section */}
         <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto">
           <div className="mb-4">
             <h2 className="chatbot-name text-gray-900 dark:text-gray-100">
-              Video Transcription
+              Recipe Based on Video Transcription
             </h2>
-            <p>Transcription content here...</p>
+            <p>{recipe ? recipe : "Generating recipe..."}</p>
           </div>
         </div>
 

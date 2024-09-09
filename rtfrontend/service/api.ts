@@ -470,3 +470,36 @@ export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMe
     }
   };
   
+  export async function fetchTranscription(videoId: string): Promise<string | null> {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat/getTranscription/${videoId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch transcription");
+      }
+      const data = await response.json();
+      return data; 
+    } catch (error) {
+      console.error("Error fetching transcription:", error);
+      return null;
+    }
+  }
+
+  export async function saveTranscription(videoId: string, transcriptionText: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/saveTranscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId,
+          transcriptionText,
+        }),
+      });
+      return response.ok; 
+    } catch (error) {
+      console.error(`Error saving transcription: ${error}`);
+      return false;
+    }
+  }
+  

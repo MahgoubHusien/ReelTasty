@@ -28,6 +28,93 @@ public class TikApi
         _bucketName = Environment.GetEnvironmentVariable("S3_BUCKET_NAME");
     }
 
+    public async Task SaveTranscription(string userId, string videoId, string transcriptionText)
+    {
+        var s3Key = $"{userId}/{videoId}/transcription.txt";
+
+        var transferUtility = new TransferUtility(_s3Client);
+        using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(transcriptionText)))
+        {
+            var uploadRequest = new TransferUtilityUploadRequest
+            {
+                InputStream = stream,
+                Key = s3Key,
+                BucketName = _bucketName,
+                ContentType = "text/plain"
+            };
+            await transferUtility.UploadAsync(uploadRequest);
+        }
+
+        await SaveTranscriptionMetadataToDb(userId, videoId, s3Key);
+    }
+
+    public async Task<string> GetTranscription(string userId, string videoId)
+    {
+        var s3Key = await GetTranscriptionMetadataFromDb(userId, videoId);
+        if (string.IsNullOrEmpty(s3Key))
+        {
+            return null; 
+        }
+
+        var request = new GetObjectRequest
+        {
+            BucketName = _bucketName,
+            Key = s3Key
+        };
+
+        using (var response = await _s3Client.GetObjectAsync(request))
+        using (var reader = new System.IO.StreamReader(response.ResponseStream))
+        {
+            var transcriptionText = await reader.ReadToEndAsync();
+            return transcriptionText;
+        }
+    }
+
+    private async Task SaveTranscriptionMetadataToDb(string userId, string videoId, string s3Key)
+    {
+        using (var conn = new NpgsqlConnection(_connectionString))
+        {
+            await conn.OpenAsync();
+            var query = @"INSERT INTO transcriptions (user_id, video_id, s3_key, created_at)
+                          VALUES (@userId, @videoId, @s3Key, @createdAt)
+                          ON CONFLICT (user_id, video_id) DO UPDATE
+                          SET s3_key = EXCLUDED.s3_key, created_at = EXCLUDED.created_at";
+
+            using (var cmd = new NpgsqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("userId", userId);
+                cmd.Parameters.AddWithValue("videoId", videoId);
+                cmd.Parameters.AddWithValue("s3Key", s3Key);
+                cmd.Parameters.AddWithValue("createdAt", DateTime.UtcNow);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+    }
+
+    private async Task<string> GetTranscriptionMetadataFromDb(string userId, string videoId)
+    {
+        using (var conn = new NpgsqlConnection(_connectionString))
+        {
+            await conn.OpenAsync();
+            var query = "SELECT s3_key FROM transcriptions WHERE user_id = @userId AND video_id = @videoId";
+
+            using (var cmd = new NpgsqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("userId", userId);
+                cmd.Parameters.AddWithValue("videoId", videoId);
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return reader.GetString(0); 
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public async Task<VideoMetadata?> GetVideoMetadataByIdAsync(string videoId)
     {
         using var connection = new NpgsqlConnection(_connectionString);
@@ -191,13 +278,19 @@ public class TikApi
                 digg_count, comment_count, share_count, play_count, 
                 collect_count, create_time 
             FROM tiktok_videos";
-            
+
+        // If a hashtag is provided, add a WHERE clause to filter the results
         if (!string.IsNullOrEmpty(hashtag))
         {
             query += " WHERE hashtags LIKE @Hashtag";
         }
 
+        // Order the results by create_time in reverse chronological order
+        query += " ORDER BY create_time DESC";
+
         using var cmd = new NpgsqlCommand(query, connection);
+
+        // If a hashtag is provided, bind it to the parameter
         if (!string.IsNullOrEmpty(hashtag))
         {
             cmd.Parameters.AddWithValue("@Hashtag", $"%{hashtag}%");
@@ -227,6 +320,7 @@ public class TikApi
         Console.WriteLine($"Retrieved {results.Count} video metadata entries.");
         return results;
     }
+
 
 
     public async Task<bool> CheckIfVideoIsSavedAsync(string userId, string videoId)
@@ -398,7 +492,7 @@ public class TikApi
             FROM recently_seen_videos rsv
             JOIN tiktok_videos tv ON rsv.video_id = tv.video_id
             WHERE rsv.user_id = @UserId
-            ORDER BY rsv.seen_at DESC";
+            ORDER BY rsv.seen_at DESC"; 
 
         using var cmd = new NpgsqlCommand(query, connection);
         cmd.Parameters.AddWithValue("@UserId", userId);
@@ -424,7 +518,7 @@ public class TikApi
             });
         }
 
-        return results;
+        return results; 
     }
 
     public async Task<bool> SubmitTikTokLinkAsync(string userId, string tiktokLink, string videoId)
@@ -455,7 +549,8 @@ public class TikApi
                 tv.digg_count, tv.comment_count, tv.share_count, tv.play_count, tv.collect_count, tv.create_time
             FROM submitted_videos sv
             LEFT JOIN tiktok_videos tv ON sv.video_id = tv.video_id
-            WHERE sv.user_id = @UserId";
+            WHERE sv.user_id = @UserId
+            ORDER BY sv.submitted_at DESC";  
 
         using var cmd = new NpgsqlCommand(query, connection);
         cmd.Parameters.AddWithValue("@UserId", userId);
@@ -492,5 +587,6 @@ public class TikApi
 
         return results;
     }
+
 
 }
