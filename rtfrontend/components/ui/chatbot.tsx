@@ -88,25 +88,37 @@ const Chatbot: React.FC<ChatbotProps> = ({ videoId, userId }) => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSend();
+    }
+  };
+
   return (
-    <div className="chatbot-container">
-      <div className="chat-window" ref={chatWindowRef}>
+    <div className="chatbot-container flex flex-col h-full">
+      <div className="chat-window flex-grow p-4 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-y-auto" ref={chatWindowRef}>
         {messages.map((message, index) => (
-          <div key={index} className={`message ${message.sender === 'user' ? 'user-message' : 'bot-message'}`}>
+          <div key={index} className={`message p-2 my-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white self-end' : 'bg-gray-300 dark:bg-gray-600 self-start'}`}>
             {message.text}
           </div>
         ))}
       </div>
-      <div className="input-container">
+      <div className="input-container flex items-center p-4 bg-gray-200 dark:bg-gray-800 rounded-lg mt-4">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
           placeholder="Type your message..."
           disabled={loading}
+          className="flex-grow p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
         />
-        <button onClick={handleSend} disabled={loading || input.trim() === ''}>
-          <AiOutlineSend />
+        <button
+          onClick={handleSend}
+          disabled={loading || input.trim() === ''}
+          className="ml-4 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors duration-200"
+        >
+          <AiOutlineSend className="text-2xl" />
         </button>
       </div>
     </div>

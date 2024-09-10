@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { fetchVideoById, fetchVideoUrlById } from "@/service/api";
+import { fetchVideoById, fetchVideoUrlById, checkIfVideoIsSaved, saveVideoForUser, unsaveVideoForUser, fetchUserId, addToRecentlySeen, fetchTranscription } from "@/service/api";
 import { submitTikTokLink } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import Chatbot from "@/components/ui/chatbot";
@@ -10,62 +10,131 @@ import { AiOutlineRobot } from "react-icons/ai";
 import 'dotenv/config';
 
 const VideoDetailPage: React.FC = () => {
-    const params = useParams();
-    const videoId = params?.videoId as string;
-    const [videoData, setVideoData] = useState<VideoMetaData | null>(null);
-    const [videoUrl, setVideoUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isSubmitted, setIsSubmitted] = useState<boolean>(false);  
-  
-    const fetchProcessedVideo = async (videoId: string) => {
-      const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
-      if (!res.ok) {
-        throw new Error("Failed to process video");
-      }
-      return res.json();
-    };
-  
-    useEffect(() => {
-      if (videoId) {
-        const fetchData = async () => {
-          try {
-            let videoResponse = await fetchVideoById(videoId);
-            console.log("Fetched video metadata from .NET backend:", videoResponse);
-    
-            if (!videoResponse || !videoResponse.video) {
-              console.log("Video not found in .NET backend, processing video in Node.js backend...");
-              videoResponse = await fetchProcessedVideo(videoId);
-              console.log("Processed video metadata from Node.js backend:", videoResponse);
-            }
-    
-            const finalVideoMetadata = videoResponse?.video || videoResponse;
-            console.log("Final video metadata:", finalVideoMetadata);
-    
-            if (finalVideoMetadata) {
-              setVideoData(finalVideoMetadata);
-              setVideoUrl(finalVideoMetadata.s3Url);
-              
-              if (!isSubmitted) {
-                const tiktokLink = `https://www.tiktok.com/${videoId}`;  
-                await submitTikTokLink(tiktokLink, finalVideoMetadata);
-                setIsSubmitted(true); 
-              }
-            } else {
-              throw new Error("Failed to fetch or process video metadata.");
-            }
-          } catch (err: any) {
-            setError(err.message);
-            console.error("Error fetching video data:", err);
-          } finally {
-            setLoading(false);
+  const params = useParams();
+  const videoId = params?.videoId as string;
+  const [videoData, setVideoData] = useState<VideoMetaData | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [transcription, setTranscription] = useState<string | null>(null);
+  const [recipe, setRecipe] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+
+  const fetchProcessedVideo = async (videoId: string) => {
+    const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
+    if (!res.ok) {
+      throw new Error("Failed to process video");
+    }
+    return res.json();
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    setIsLoggedIn(!!token);
+
+    if (videoId) {
+      const fetchData = async () => {
+        try {
+          console.log("Fetching video data for videoId:", videoId);
+          let videoResponse = await fetchVideoById(videoId);
+          const videoMetadata = videoResponse?.video;
+
+          if (!videoResponse || !videoMetadata) {
+            console.log("Video not found in .NET backend, processing video in Node.js backend...");
+            videoResponse = await fetchProcessedVideo(videoId);
           }
-        };
-    
-        fetchData();
+
+          const finalVideoMetadata = videoResponse?.video || videoResponse;
+          console.log("Final video metadata:", finalVideoMetadata);
+
+          if (finalVideoMetadata) {
+            setVideoData(finalVideoMetadata);
+            const url = await fetchVideoUrlById(videoId);
+            setVideoUrl(finalVideoMetadata.s3Url || url);
+
+            if (!isSubmitted) {
+              const tiktokLink = `https://www.tiktok.com/${videoId}`;
+              await submitTikTokLink(tiktokLink, finalVideoMetadata);
+              setIsSubmitted(true);
+            }
+
+            const transcriptionData = await fetchTranscription(videoId);
+            setTranscription(transcriptionData);
+
+            if (transcriptionData) {
+              const combinedText = `
+                Video Description: ${finalVideoMetadata.description || 'No description available'}.
+                Transcription: ${transcriptionData || 'No transcription available'}.
+              `;
+
+              const recipeResponse = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: `Using the following combined text, generate a detailed recipe. It must look pretty and readable for the user. It should be sequential with numbers and spaces in between each.: ${combinedText}`,
+                  videoId,
+                }),
+              });
+
+              const { botMessage } = await recipeResponse.json();
+              setRecipe(botMessage);
+            }
+
+            if (isLoggedIn) {
+              const { isSaved } = await checkIfVideoIsSaved(videoId);
+              setIsSaved(isSaved);
+
+              const fetchedUserId = await fetchUserId();
+              if (fetchedUserId) {
+                setUserId(fetchedUserId);
+                const addedToRecentlySeen = await addToRecentlySeen(fetchedUserId, videoId);
+                if (!addedToRecentlySeen) {
+                  console.error("Failed to add video to recently seen.");
+                }
+              } else {
+                console.error("User ID is not available.");
+              }
+            }
+          } else {
+            setVideoData(null);
+            setVideoUrl(null);
+          }
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }
+  }, [videoId, isSubmitted, isLoggedIn]);
+
+  const handleSave = async () => {
+    if (!isLoggedIn) {
+      alert("Please log in to save videos.");
+      return;
+    }
+
+    if (videoId) {
+      const result = await saveVideoForUser(videoId);
+      if (result) {
+        setIsSaved(true);
       }
-    }, [videoId, isSubmitted]); 
-  
+    }
+  };
+
+  const handleUnsave = async () => {
+    if (videoId) {
+      const result = await unsaveVideoForUser(videoId);
+      if (result) {
+        setIsSaved(false);
+      }
+    }
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -92,7 +161,8 @@ const VideoDetailPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[665px]">
+        {/* Video Meta Data Section */}
+        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[670px]">
           <div className="space-y-2 text-xs lg:text-sm text-gray-900 dark:text-gray-100">
             <h2 className="pt-1 text-lg font-semibold mb- text-gray-900 dark:text-gray-100">
               Author Stats
@@ -101,10 +171,11 @@ const VideoDetailPage: React.FC = () => {
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Video Stats
             </h2>
-            <p>Likes: {videoData.stats?.diggCount ?? videoData?.diggCount ?? "N/A"}</p>
-            <p>Comments: {videoData.stats?.commentCount ?? videoData?.commentCount ?? "N/A"}</p>
-            <p>Shares: {videoData.stats?.shareCount ?? videoData?.shareCount ?? "N/A"}</p>
-            <p>Play Count: {videoData.stats?.playCount ?? videoData?.playCount ?? "N/A"}</p>
+            <p>Likes: {videoData.diggCount ?? "N/A"}</p>
+            <p>Comments: {videoData.commentCount ?? "N/A"}</p>
+            <p>Shares: {videoData.shareCount ?? "N/A"}</p>
+            <p>Play Count: {videoData.playCount ?? "N/A"}</p>
+            <p>Collect Count: {videoData.collectCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description
@@ -139,18 +210,17 @@ const VideoDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Video Transcription Section */}
-        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto">
+        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto h-[670px]">
           <div className="mb-4">
             <h2 className="chatbot-name text-gray-900 dark:text-gray-100">
-              Video Transcription
+              Recipe
             </h2>
-            <p>Transcription content here...</p>
+            <p>{recipe ? recipe : "Generating recipe..."}</p>
           </div>
-        </div>
+          </div>
 
-        {/* Chatbot Section */}
-        <div className="flex flex-col lg:w-2/5 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg h-[630px] lg:h-auto">
+          {/* Chatbot Section */}
+          <div className="flex flex-col lg:w-2/5 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg h-[630px] lg:h-auto">
           <div className="chatbot-header flex items-center gap-4 mb-4">
             <AiOutlineRobot className="text-3xl text-primary dark:text-primary-dark" />
             <h2 className="chatbot-name text-gray-900 dark:text-gray-100">
@@ -158,7 +228,7 @@ const VideoDetailPage: React.FC = () => {
             </h2>
           </div>
           <div className="flex-grow h-full overflow-y-auto lg:overflow-hidden">
-            <Chatbot videoId={videoId ?? ""} />
+            <Chatbot videoId={videoId ?? ""} userId={userId ?? ""} />
           </div>
         </div>
       </div>

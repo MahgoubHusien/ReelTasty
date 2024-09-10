@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Chatbot from "@/components/ui/chatbot";
-import { fetchVideoById, fetchVideoUrlById, saveVideoForUser, unsaveVideoForUser, checkIfVideoIsSaved, addToRecentlySeen, fetchUserId, fetchTranscription, saveTranscription, generateRecipeFromGPT, } from "@/service/api";
+import { fetchVideoById, fetchVideoUrlById, saveVideoForUser, unsaveVideoForUser, checkIfVideoIsSaved, addToRecentlySeen, fetchUserId, fetchTranscription } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import { AiOutlineRobot } from "react-icons/ai";
 
@@ -17,40 +17,53 @@ const TikTokDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [transcription, setTranscription] = useState<string | null>(null); 
+  const [transcription, setTranscription] = useState<string | null>(null);
   const [recipe, setRecipe] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     setIsLoggedIn(!!token);
-
+  
     if (videoId) {
       const fetchData = async () => {
         try {
           console.log("Fetching video data for videoId:", videoId);
-
+  
           const data = await fetchVideoById(videoId);
           const videoMetadata = data?.video;
-
+  
           if (videoMetadata) {
             setVideoData(videoMetadata);
             const url = await fetchVideoUrlById(videoId);
             setVideoUrl(videoMetadata.s3Url || url);
             console.log("Fetched video URL:", url);
-
+  
             const transcriptionData = await fetchTranscription(videoId);
             setTranscription(transcriptionData);
-
-            const recipeData = await generateRecipeFromGPT(
-              transcriptionData,
-              videoMetadata.description
-            );
-            setRecipe(recipeData);
-
+  
+            if (transcriptionData) {
+              const combinedText = `
+                Video Description: ${videoMetadata.description || 'No description available'}.
+                Transcription: ${transcriptionData || 'No transcription available'}.
+              `;
+  
+              const recipeResponse = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}/api/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: `Using the following combined text, generate a detailed recipe. It must look pretty and readable for the user. It should be sequential with numbers and spaces in between each.: ${combinedText}`,
+                  videoId,
+                }),
+              });
+  
+              const { botMessage } = await recipeResponse.json();
+              setRecipe(botMessage);
+            }
+  
             if (isLoggedIn) {
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
-
+  
               const fetchedUserId = await fetchUserId();
               if (fetchedUserId) {
                 setUserId(fetchedUserId);
@@ -78,6 +91,7 @@ const TikTokDetailPage: React.FC = () => {
       fetchData();
     }
   }, [videoId, isLoggedIn]);
+  
 
   const handleSave = async () => {
     if (!isLoggedIn) {
@@ -158,7 +172,7 @@ const TikTokDetailPage: React.FC = () => {
         </div>
 
         {/* Video Meta Data Section */}
-        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[700px]">
+        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto max-h-[670px]">
           <div className="space-y-2 text-xs lg:text-sm text-gray-900 dark:text-gray-100">
             <h2 className="pt-1 text-lg font-semibold mb- text-gray-900 dark:text-gray-100">
               Author Stats
@@ -206,18 +220,17 @@ const TikTokDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Video Transcription and Recipe Section */}
-        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto">
+        <div className="flex flex-col lg:w-1/3 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg overflow-y-auto h-[670px]">
           <div className="mb-4">
             <h2 className="chatbot-name text-gray-900 dark:text-gray-100">
-              Recipe Based on Video Transcription
+              Recipe
             </h2>
             <p>{recipe ? recipe : "Generating recipe..."}</p>
           </div>
-        </div>
+          </div>
 
-        {/* Chatbot Section */}
-        <div className="flex flex-col lg:w-2/5 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg h-[630px] lg:h-auto">
+          {/* Chatbot Section */}
+          <div className="flex flex-col lg:w-2/5 bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg h-[630px] lg:h-auto">
           <div className="chatbot-header flex items-center gap-4 mb-4">
             <AiOutlineRobot className="text-3xl text-primary dark:text-primary-dark" />
             <h2 className="chatbot-name text-gray-900 dark:text-gray-100">

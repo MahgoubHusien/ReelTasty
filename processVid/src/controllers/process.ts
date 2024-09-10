@@ -31,7 +31,6 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-// Define the VideoMetadata interface
 interface VideoMetadata {
   videoId: string;
   author: string;
@@ -47,16 +46,6 @@ interface VideoMetadata {
   };
 }
 
-// List of hashtags to fetch
-const hashtags = [
-  "food",
-  "cooking",
-  "foodtok",
-  "recipesoftiktok",
-  "baking",
-  "healthyfood",
-  "tiktokfood"
-];
 
 const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
 
@@ -123,7 +112,7 @@ const uploadVideoToS3 = async (filePath: string, videoId: string): Promise<strin
   }
 };
 
-const processHashtag = async (hashtag: string) => {
+export const processHashtag = async (hashtag: string) => {
   try {
     let response = await api.public.hashtag({ name: hashtag });
 
@@ -191,18 +180,59 @@ const processHashtag = async (hashtag: string) => {
   }
 };
 
-app.get('/fetchHashtagVideos', async (req, res) => {
-  try {
-    for (const hashtag of hashtags) {
-      await processHashtag(hashtag);
-    }
-    res.status(200).json({ message: 'Hashtag videos fetched and processed successfully.' });
-  } catch (err) {
-    console.error('Error fetching hashtag videos:', err);
-    res.status(500).json({ error: 'Error fetching hashtag videos' });
-  }
-});
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+export const processVideo = async (videoId: string) => {
+  try {
+    const videoResponse = await api.public.video({ id: videoId });
+
+    if (!videoResponse?.json) {
+      throw new Error('No video data received from TikAPI.');
+    }
+
+    const item = videoResponse.json.itemInfo.itemStruct;
+    const description = item.desc.toLowerCase();
+
+    if (excludedKeywords.some(keyword => description.includes(keyword))) {
+      console.log(`Video with ID ${item.id} excluded due to matching keywords.`);
+      return { error: "Excluded content." };
+    }
+
+    const videoMetadata: VideoMetadata = {
+      videoId: item.id,
+      author: item.author.nickname,
+      description: item.desc,
+      hashtags: item.challengeInfoList?.map((challenge: { challengeName: string }) => challenge.challengeName).join(', ') || '',
+      s3Url: '',
+      avatarLargeUrl: item.author.avatarLarger,
+      stats: {
+        playCount: item.stats.playCount,
+        shareCount: item.stats.shareCount,
+        commentCount: item.stats.commentCount,
+        diggCount: item.stats.diggCount,
+      },
+    };
+
+    const downloadAddr = item.video.downloadAddr;
+    const filePath = path.join('/tmp', `${videoMetadata.videoId}.mp4`);
+
+    if (videoResponse.saveVideo) {
+      await videoResponse.saveVideo(downloadAddr, filePath);
+      console.log(`Video downloaded to: ${filePath}`);
+
+      videoMetadata.s3Url = await uploadVideoToS3(filePath, videoMetadata.videoId);
+      
+      await storeVideoMetadataInDB(videoMetadata);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Temporary file deleted: ${filePath}`);
+      }
+
+      return videoMetadata;
+    }
+  } catch (error) {
+    console.error(`Error processing video with ID ${videoId}:`, error);
+    throw new Error(`Error processing video with ID ${videoId}`);
+  }
+};
+

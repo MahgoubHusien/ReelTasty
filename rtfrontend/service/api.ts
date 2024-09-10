@@ -1,6 +1,6 @@
 import { VideoMetaData, TikTokLinkSubmissionWithMetadata } from "../types/types";
 
-export async function processVideo(videoId: string): Promise<{ videoId: string }> {
+export const processVideo = async (videoId: string): Promise<{ videoId: string }> => {
     const response = await fetch('/api/processVideo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -13,8 +13,7 @@ export async function processVideo(videoId: string): Promise<{ videoId: string }
   
     const data = await response.json();
     return { videoId: data.videoId };
-  }
-  
+  };   
 
 export const fetchVideos = async (identifier: string, isVideoId: boolean = false): Promise<VideoMetaData[] | null> => {
     try {
@@ -469,24 +468,77 @@ export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMe
       return null;
     }
   };
-  
-  export async function fetchTranscription(videoId: string): Promise<string | null> {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat/getTranscription/${videoId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch transcription");
-      }
-      const data = await response.json();
-      return data; 
-    } catch (error) {
-      console.error("Error fetching transcription:", error);
-      return null;
-    }
-  }
 
-  export async function saveTranscription(videoId: string, transcriptionText: string): Promise<boolean> {
+export const fetchTranscription = async (videoId: string): Promise<string | null> => {
+try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat/getTranscription/${videoId}`, {
+        method: 'GET',
+    });
+
+    console.log("Raw response:", response);
+
+    if (response.ok) {
+        const contentType = response.headers.get('Content-Type');
+        console.log("Content-Type:", contentType);
+
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            console.log("Parsed JSON data:", data);
+            return data.transcription_text || null;
+        } else {
+            const textData = await response.text();
+            console.log("Non-JSON response:", textData);
+            return textData; 
+        }
+    }
+
+    if (response.status === 404) {
+        console.warn(`Transcription not found for videoId: ${videoId}. Proceeding to transcribe the video.`);
+
+        const transcribeResponse = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}/api/transcribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoId }),
+        });
+
+        const transcribeText = await transcribeResponse.text();
+        console.log("Transcribe response (raw text):", transcribeText);
+
+        try {
+            const transcribeData = JSON.parse(transcribeText);
+            console.log("Transcribe data (parsed JSON):", transcribeData);
+
+            const transcriptionText = transcribeData.transcription|| null;
+
+            if (transcriptionText) {
+                const saveSuccess = await saveTranscription(videoId, transcriptionText);
+                if (saveSuccess) {
+                    console.log("Transcription saved successfully.");
+                    return transcriptionText;
+                } else {
+                    console.error("Failed to save the transcription.");
+                    return transcriptionText;
+                }
+            }
+
+            throw new Error(`Error transcribing video with videoId: ${videoId}`);
+        } catch (jsonError) {
+            console.error("Failed to parse transcription response as JSON:", jsonError);
+            return transcribeText; 
+        }
+    }
+
+    throw new Error(`Error fetching transcription for videoId: ${videoId}`);
+} catch (error) {
+    console.error(`Error fetching transcription for video ${videoId}:`, error);
+    return null;
+}
+};
+
+
+export const saveTranscription = async (videoId: string, transcriptionText: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/saveTranscription`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/chat/saveTranscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -496,10 +548,28 @@ export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMe
           transcriptionText,
         }),
       });
-      return response.ok; 
+  
+      console.log(`Save transcription response status: ${response.status}`);
+      
+      if (response.ok) {
+        console.log(`Transcription for videoId ${videoId} saved successfully.`);
+        return true;  
+      } else {
+        const contentType = response.headers.get('Content-Type');
+        console.log("Response Content-Type:", contentType);
+  
+        if (contentType && contentType.includes('application/json')) {
+          const errorResponse = await response.json();
+          console.error(`Failed to save transcription for videoId ${videoId} (JSON response):`, errorResponse);
+        } else {
+          const errorText = await response.text();
+          console.error(`Failed to save transcription for videoId ${videoId} (Non-JSON response):`, errorText);
+        }
+        return false;
+      }
     } catch (error) {
-      console.error(`Error saving transcription: ${error}`);
+      console.error(`Error saving transcription for videoId ${videoId}:`, error);
       return false;
     }
-  }
+  };
   

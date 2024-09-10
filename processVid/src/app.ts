@@ -2,15 +2,20 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { getOpenAIResponse } from "./services/openai";
-import { transcribeVideoFromS3 } from "./services/transcription"; 
+import { transcribeVideoFromS3 } from "./services/transcription";
+import { processVideo } from "./controllers/process" 
+import { processHashtag } from "./controllers/process" 
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.post("/api/chat", async (req, res) => {
   const { message, userId, videoId } = req.body;
@@ -48,6 +53,50 @@ app.post("/api/transcribe", async (req, res) => {
     return res.status(500).json({ error: "Failed to transcribe video" });
   }
 });
+
+// Define an API route for processing a specific video
+app.get('/processVideo/:videoId', async (req, res) => {
+
+  const { videoId } = req.params;
+  console.log("Processing video with ID:", req.params.videoId);
+
+
+  if (!videoId) {
+    return res.status(400).json({ error: "Missing videoId parameter." });
+  }
+
+  try {
+    const videoMetadata = await processVideo(videoId);
+    res.status(200).json({ message: "Video processed successfully", video: videoMetadata });
+  } catch (error) {
+    console.error('Error processing video:', error);
+    res.status(500).json({ error: 'Error processing video' });
+  }
+});
+
+const hashtags = [
+  "food",
+  "cooking",
+  "foodtok",
+  "recipesoftiktok",
+  "baking",
+  "healthyfood",
+  "tiktokfood"
+];
+
+
+app.get('/fetchHashtagVideos', async (req, res) => {
+  try {
+    for (const hashtag of hashtags) {
+      await processHashtag(hashtag);
+    }
+    res.status(200).json({ message: 'Hashtag videos fetched and processed successfully.' });
+  } catch (err) {
+    console.error('Error fetching hashtag videos:', err);
+    res.status(500).json({ error: 'Error fetching hashtag videos' });
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
