@@ -9,9 +9,9 @@ import 'dotenv/config';
 const api = TikAPI(process.env.TIKAPI_KEY as string);
 
 const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-  region: process.env.AWS_REGION as string,
+  accessKeyId: process.env.ACCESS_KEY_ID as string,
+  secretAccessKey: process.env.SECRET_ACCESS_KEY as string,
+  region: process.env.REGION as string,
 });
 
 async function uploadVideoStreamToS3(videoId: string, videoStream: any): Promise<string> {

@@ -4,6 +4,7 @@ import React, { forwardRef, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import { AnimatedBeam } from "@/components/magicui/animated-beam";
+import Image from 'next/image';
 
 const Circle = forwardRef<
   HTMLDivElement,
@@ -49,7 +50,7 @@ export function AnimatedBeamMultipleOutputDemo({
       <div className="flex size-full flex-row items-stretch justify-between gap-10 max-w-lg">
         <div className="flex flex-col justify-center gap-2">
           <Circle ref={div3Ref}>
-            <img src="/tiktok.png" alt="TikTok" className="h-5 w-10" />
+            <Image src="/tiktok.png" alt="TikTok" width={32} height={32} />
           </Circle>
         </div>
         <div className="flex flex-col justify-center">

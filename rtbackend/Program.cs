@@ -62,11 +62,11 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var config = new AmazonS3Config
     {
-        RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("AWS_REGION")),
+        RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(Environment.GetEnvironmentVariable("REGION")),
     };
     return new AmazonS3Client(
-        Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID"),
-        Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY"),
+        Environment.GetEnvironmentVariable("ACCESS_KEY_ID"),
+        Environment.GetEnvironmentVariable("SECRET_ACCESS_KEY"),
         config
     );
 });
