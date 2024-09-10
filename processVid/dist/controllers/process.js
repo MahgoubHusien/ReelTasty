@@ -52,7 +52,6 @@ const storeVideoMetadataInDB = (videoMetadata) => __awaiter(void 0, void 0, void
     try {
         const existingVideo = yield pool.query('SELECT video_id FROM tiktok_videos WHERE video_id = $1', [videoMetadata.videoId]);
         if ((_a = existingVideo.rowCount) !== null && _a !== void 0 ? _a : 0 > 0) {
-            console.log(`Video with ID ${videoMetadata.videoId} already exists. Skipping insert.`);
             return;
         }
         const query = `
@@ -73,7 +72,6 @@ const storeVideoMetadataInDB = (videoMetadata) => __awaiter(void 0, void 0, void
             videoMetadata.stats.diggCount,
         ];
         yield pool.query(query, values);
-        console.log(`Video metadata stored for video ID: ${videoMetadata.videoId}`);
     }
     catch (err) {
         console.error('Error storing video metadata:', err);
@@ -93,7 +91,6 @@ const uploadVideoToS3 = (filePath, videoId) => __awaiter(void 0, void 0, void 0,
             ContentType: 'video/mp4',
         };
         const uploadResult = yield s3.upload(s3Params).promise();
-        console.log(`Video uploaded to S3 with key: ${fileName}`);
         return uploadResult.Location;
     }
     catch (err) {
@@ -110,13 +107,11 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
         }
         const hashtagId = response.json.challengeInfo.challenge.id;
         response = yield api.public.hashtag({ id: hashtagId });
-        console.log(`Fetched initial videos for hashtag: ${hashtag}`);
         while (response) {
             const videos = ((_a = response === null || response === void 0 ? void 0 : response.json) === null || _a === void 0 ? void 0 : _a.itemList) || [];
             for (const item of videos) {
                 const description = item.desc.toLowerCase();
                 if (excludedKeywords.some(keyword => description.includes(keyword))) {
-                    console.log(`Video with ID ${item.id} excluded due to matching keywords.`);
                     continue;
                 }
                 const videoMetadata = {
@@ -137,21 +132,17 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
                 const filePath = path_1.default.join('/tmp', `${videoMetadata.videoId}.mp4`);
                 if (response.saveVideo) {
                     yield response.saveVideo(downloadAddr, filePath);
-                    console.log(`Video downloaded to: ${filePath}`);
                     videoMetadata.s3Url = yield uploadVideoToS3(filePath, videoMetadata.videoId);
                     yield storeVideoMetadataInDB(videoMetadata);
                     if (fs_1.default.existsSync(filePath)) {
                         fs_1.default.unlinkSync(filePath);
-                        console.log(`Temporary file deleted: ${filePath}`);
                     }
                 }
             }
             if (response.nextItems) {
-                console.log('Fetching next items...');
                 response = yield response.nextItems();
             }
             else {
-                console.log('No more items to fetch.');
                 break;
             }
         }
@@ -173,5 +164,4 @@ app.get('/fetchHashtagVideos', (req, res) => __awaiter(void 0, void 0, void 0, f
     }
 }));
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
 });

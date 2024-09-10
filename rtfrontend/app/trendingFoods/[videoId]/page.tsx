@@ -6,6 +6,8 @@ import Chatbot from "@/components/ui/chatbot";
 import { fetchVideoById, fetchVideoUrlById, saveVideoForUser, unsaveVideoForUser, checkIfVideoIsSaved, addToRecentlySeen, fetchUserId, fetchTranscription } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import { AiOutlineRobot } from "react-icons/ai";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+
 
 const TikTokDetailPage: React.FC = () => {
   const params = useParams();
@@ -27,7 +29,6 @@ const TikTokDetailPage: React.FC = () => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          console.log("Fetching video data for videoId:", videoId);
   
           const data = await fetchVideoById(videoId);
           const videoMetadata = data?.video;
@@ -36,7 +37,6 @@ const TikTokDetailPage: React.FC = () => {
             setVideoData(videoMetadata);
             const url = await fetchVideoUrlById(videoId);
             setVideoUrl(videoMetadata.s3Url || url);
-            console.log("Fetched video URL:", url);
   
             const transcriptionData = await fetchTranscription(videoId);
             setTranscription(transcriptionData);
@@ -117,7 +117,11 @@ const TikTokDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <AiOutlineLoading3Quarters className="animate-spin text-4xl text-primary" />
+      </div>
+    );
   }
 
   if (error) {

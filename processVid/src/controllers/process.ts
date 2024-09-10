@@ -57,7 +57,6 @@ const storeVideoMetadataInDB = async (videoMetadata: VideoMetadata) => {
     );
 
     if (existingVideo.rowCount ?? 0 > 0) {
-      console.log(`Video with ID ${videoMetadata.videoId} already exists. Skipping insert.`);
       return;
     }
 
@@ -80,7 +79,6 @@ const storeVideoMetadataInDB = async (videoMetadata: VideoMetadata) => {
     ];
 
     await pool.query(query, values);
-    console.log(`Video metadata stored for video ID: ${videoMetadata.videoId}`);
   } catch (err) {
     console.error('Error storing video metadata:', err);
   }
@@ -103,7 +101,6 @@ const uploadVideoToS3 = async (filePath: string, videoId: string): Promise<strin
     };
 
     const uploadResult = await s3.upload(s3Params).promise();
-    console.log(`Video uploaded to S3 with key: ${fileName}`);
 
     return uploadResult.Location;
   } catch (err) {
@@ -122,7 +119,6 @@ export const processHashtag = async (hashtag: string) => {
 
     const hashtagId = response.json.challengeInfo.challenge.id;
     response = await api.public.hashtag({ id: hashtagId });
-    console.log(`Fetched initial videos for hashtag: ${hashtag}`);
 
     while (response) {
       const videos = response?.json?.itemList || [];
@@ -131,7 +127,6 @@ export const processHashtag = async (hashtag: string) => {
         const description = item.desc.toLowerCase();
 
         if (excludedKeywords.some(keyword => description.includes(keyword))) {
-          console.log(`Video with ID ${item.id} excluded due to matching keywords.`);
           continue;
         }
 
@@ -155,23 +150,19 @@ export const processHashtag = async (hashtag: string) => {
 
         if (response.saveVideo) {
           await response.saveVideo(downloadAddr, filePath);
-          console.log(`Video downloaded to: ${filePath}`);
 
           videoMetadata.s3Url = await uploadVideoToS3(filePath, videoMetadata.videoId);
           await storeVideoMetadataInDB(videoMetadata);
 
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
-            console.log(`Temporary file deleted: ${filePath}`);
           }
         }
       }
 
       if (response.nextItems) {
-        console.log('Fetching next items...');
         response = await response.nextItems();
       } else {
-        console.log('No more items to fetch.');
         break;
       }
     }
@@ -193,7 +184,6 @@ export const processVideo = async (videoId: string) => {
     const description = item.desc.toLowerCase();
 
     if (excludedKeywords.some(keyword => description.includes(keyword))) {
-      console.log(`Video with ID ${item.id} excluded due to matching keywords.`);
       return { error: "Excluded content." };
     }
 
@@ -217,7 +207,6 @@ export const processVideo = async (videoId: string) => {
 
     if (videoResponse.saveVideo) {
       await videoResponse.saveVideo(downloadAddr, filePath);
-      console.log(`Video downloaded to: ${filePath}`);
 
       videoMetadata.s3Url = await uploadVideoToS3(filePath, videoMetadata.videoId);
       
@@ -225,7 +214,6 @@ export const processVideo = async (videoId: string) => {
 
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
-        console.log(`Temporary file deleted: ${filePath}`);
       }
 
       return videoMetadata;

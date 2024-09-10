@@ -261,14 +261,12 @@ public class TikApi
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error generating pre-signed URL: {ex.Message}");
             return null; 
         }
     }
 
     public async Task<IEnumerable<VideoMetadata>> GetVideoMetadataAsync(string? hashtag = null)
     {
-        Console.WriteLine("Fetching video metadata...");
 
         using var connection = new NpgsqlConnection(_connectionString);
         await connection.OpenAsync();
@@ -317,7 +315,6 @@ public class TikApi
             });
         }
 
-        Console.WriteLine($"Retrieved {results.Count} video metadata entries.");
         return results;
     }
 
@@ -354,7 +351,6 @@ public class TikApi
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error generating pre-signed URL: {ex.Message}");
             throw;
         }
     }
@@ -386,11 +382,9 @@ public class TikApi
             cmd.Parameters.AddWithValue("@CreateTime", videoMetadata.CreateTime ?? (object)DBNull.Value);
 
             await cmd.ExecuteNonQueryAsync();
-            Console.WriteLine("Video added to the database.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error inserting video data: {ex.Message}");
             throw; 
         }
     }
@@ -425,14 +419,12 @@ public class TikApi
             cmd.Parameters.AddWithValue("@VideoId", videoId);
             await cmd.ExecuteNonQueryAsync();
 
-            Console.WriteLine("Video removed from the database.");
 
             await transaction.CommitAsync();
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            Console.WriteLine($"Error removing video from the database: {ex.Message}");
             throw;
         }
 
@@ -445,11 +437,9 @@ public class TikApi
             };
 
             await _s3Client.DeleteObjectAsync(deleteRequest);
-            Console.WriteLine("Video removed from S3.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error removing video from S3: {ex.Message}");
             throw;
         }
     }
@@ -475,7 +465,6 @@ public class TikApi
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in AddRecentlySeenVideoAsync: {ex.Message}");
             throw;  
         }
     }

@@ -5,6 +5,8 @@ import VideoGrid from "../../components/ui/VideoGrid";
 import { fetchRecentlySeenVideos, fetchSavedVideos, fetchSubmittedVideos, fetchUserId } from "@/service/api";
 import { VideoMetaData } from "@/types/types"; 
 import { useRouter } from "next/navigation";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+
 
 const YourVideosPage: React.FC = () => {
   const [recentlySeenVideos, setRecentlySeenVideos] = useState<VideoMetaData[]>([]);
@@ -44,16 +46,11 @@ const YourVideosPage: React.FC = () => {
           fetchSavedVideos(),
           fetchSubmittedVideos()
         ]);
-  
-        console.log("Recently Seen Videos:", recentlySeen);
-        console.log("Saved Videos:", saved);
-        console.log("Submitted Videos:", submitted);
-  
+ 
         setRecentlySeenVideos(recentlySeen || []);
         setSavedVideos(saved || []);
   
         const submittedVideoMetaData = submitted?.map(submission => submission.videoMetaData) || [];
-        console.log("Extracted Submitted Video Metadata:", submittedVideoMetaData); 
         setSubmittedVideos(submittedVideoMetaData);
   
       } catch (err) {
@@ -87,8 +84,8 @@ const YourVideosPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <p>Loading your videos...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <AiOutlineLoading3Quarters className="animate-spin text-4xl text-primary" />
       </div>
     );
   }

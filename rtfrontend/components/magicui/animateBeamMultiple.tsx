@@ -40,24 +40,16 @@ export function AnimatedBeamMultipleOutputDemo({
 
   return (
     <div
-    className={cn(
+      className={cn(
         "relative flex h-[300px] w-full items-center justify-center overflow-hidden rounded-lg border-none bg-background p-4 ",
-        className,
+        className
       )}
-      
       ref={containerRef}
     >
       <div className="flex size-full flex-row items-stretch justify-between gap-10 max-w-lg">
         <div className="flex flex-col justify-center gap-2">
-          
-          <Circle ref={div2Ref}>
-            <Icons.googleDocs />
-          </Circle>
           <Circle ref={div3Ref}>
-            <Icons.whatsapp />
-          </Circle>
-          <Circle ref={div4Ref}>
-            <Icons.messenger />
+            <img src="/tiktok.png" alt="TikTok" className="h-5 w-10" />
           </Circle>
         </div>
         <div className="flex flex-col justify-center">
@@ -71,7 +63,7 @@ export function AnimatedBeamMultipleOutputDemo({
           </Circle>
         </div>
       </div>
-
+  
       <AnimatedBeam
         containerRef={containerRef}
         fromRef={div2Ref}
@@ -99,8 +91,7 @@ export function AnimatedBeamMultipleOutputDemo({
       />
     </div>
   );
-}
-
+  }
 const Icons = {
   notion: () => (
     <svg
@@ -401,6 +392,7 @@ const Icons = {
       </g>
     </svg>
   ),
+
   zapier: () => (
     <svg
       width="105"

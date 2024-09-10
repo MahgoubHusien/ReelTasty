@@ -23,14 +23,11 @@ app.use(express_1.default.json());
 const port = process.env.PORT || 3000;
 app.post("/api/chat", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { message, userId, videoId } = req.body;
-    console.log('Incoming chat request:', { userId, videoId, message });
     if (!message || !videoId) {
-        console.log('Bad Request: Message and Video ID are required');
         return res.status(400).json({ error: "Message and Video ID are required" });
     }
     try {
         const botResponse = yield (0, openai_1.getOpenAIResponse)(message);
-        console.log('OpenAI response:', botResponse);
         return res.status(200).json({ botMessage: botResponse });
     }
     catch (error) {

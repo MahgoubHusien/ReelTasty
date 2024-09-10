@@ -7,6 +7,7 @@ import { submitTikTokLink } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
 import Chatbot from "@/components/ui/chatbot";
 import { AiOutlineRobot } from "react-icons/ai";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import 'dotenv/config';
 
 const VideoDetailPage: React.FC = () => {
@@ -38,17 +39,14 @@ const VideoDetailPage: React.FC = () => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          console.log("Fetching video data for videoId:", videoId);
           let videoResponse = await fetchVideoById(videoId);
           const videoMetadata = videoResponse?.video;
 
           if (!videoResponse || !videoMetadata) {
-            console.log("Video not found in .NET backend, processing video in Node.js backend...");
             videoResponse = await fetchProcessedVideo(videoId);
           }
 
           const finalVideoMetadata = videoResponse?.video || videoResponse;
-          console.log("Final video metadata:", finalVideoMetadata);
 
           if (finalVideoMetadata) {
             setVideoData(finalVideoMetadata);
@@ -137,7 +135,11 @@ const VideoDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <AiOutlineLoading3Quarters className="animate-spin text-4xl text-primary" />
+      </div>
+    );
   }
 
   if (error) {

@@ -61,7 +61,6 @@ const AuthPage: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log("Success:", data);
 
       if (isLogin && data.token) {
         localStorage.setItem("authToken", data.token);

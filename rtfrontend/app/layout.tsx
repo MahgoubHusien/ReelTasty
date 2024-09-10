@@ -1,41 +1,32 @@
-"use client";  
-
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "./provider";
-import Navbar from "@/components/ui/navbar";
-import { usePathname } from "next/navigation";  
+import Head from 'next/head';
+import ClientLayout from './ClientLayout'; 
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const metadata = {
+  title: 'Reel Tasty',
+  description: '...',
+  icons: {
+    icon: '/favicon.ico',
+  },
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pathname = usePathname() || '';  
-
-  const hideNavbarPaths = ["/auth", "/confirmEmail", "/forgotPassword", "/resetPassword"];
-
-  const shouldShowNavbar = !hideNavbarPaths.includes(pathname);
-
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-background dark:bg-[#121212]`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {/* Conditionally render Navbar based on pathname */}
-          <div className="relative min-h-screen w-full">
-            {shouldShowNavbar && <Navbar />}
-            <div className="relative z-10">
-              {children}
-            </div>
-          </div>
-        </ThemeProvider>
+      <Head>
+        <link rel="icon" href="/favicon.ico" sizes="any" type="image/x-icon" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <title>Reel Tasty</title>
+      </Head>
+      <body className={inter.className}>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

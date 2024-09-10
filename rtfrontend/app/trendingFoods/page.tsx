@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import VideoGrid from "../../components/ui/VideoGrid";
 import { fetchVideos } from "../../service/api";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+
 
 const hashtags = [ "food", "cooking", "recipesoftiktok", "baking", "healthyfood", "tiktokfood"];
   
@@ -33,8 +35,8 @@ const TrendingFoodsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <p>Loading videos...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <AiOutlineLoading3Quarters className="animate-spin text-4xl text-primary" />
       </div>
     );
   }

@@ -19,7 +19,6 @@ public class ChatController : ControllerBase
         var database = Environment.GetEnvironmentVariable("DB_NAME");
 
         _connectionString = $"Host={host};Port={port};Username={user};Password={password};Database={database}";
-        Console.WriteLine("Connection String: " + _connectionString);
     }
 
     [HttpPost("saveTranscription")]
@@ -37,7 +36,6 @@ public class ChatController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving transcription: {ex.Message}");
             return StatusCode(500, $"Error saving transcription: {ex.Message}");
         }
     }
@@ -56,7 +54,6 @@ public class ChatController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error retrieving transcription: {ex.Message}");
             return StatusCode(500, $"Error retrieving transcription: {ex.Message}");
         }
     }
@@ -117,7 +114,6 @@ public class ChatController : ControllerBase
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine($"Error saving chat messages: {ex.Message}");
             return StatusCode(500, $"Error saving chat messages: {ex.Message}");
         }
     }
@@ -137,7 +133,6 @@ public class ChatController : ControllerBase
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine($"Error retrieving chat history: {ex.Message}");
             return StatusCode(500, $"Error retrieving chat history: {ex.Message}");
         }
     }
@@ -160,7 +155,6 @@ public class ChatController : ControllerBase
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine($"Error saving message to the database: {ex.Message}");
             throw new System.Exception($"Error saving message to the database: {ex.Message}");
         }
     }
@@ -194,7 +188,6 @@ public class ChatController : ControllerBase
         }
         catch (System.Exception ex)
         {
-            Console.WriteLine($"Error retrieving chat history from the database: {ex.Message}");
             throw new System.Exception($"Error retrieving chat history from the database: {ex.Message}");
         }
     }

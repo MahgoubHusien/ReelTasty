@@ -67,7 +67,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
         const data = await response.json();
         setUsername(data.userName || '');
       } else if (response.status === 401) {
-        console.log("Token expired or unauthorized. Logging out...");
         handleLogout();
       } else {
         console.error("Failed to fetch username: ", response.statusText);
@@ -107,9 +106,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
         <div className="flex items-center">
           <Link
             href="/"
-            className="nav-item transition-colors px-4 py-2 text-xl font-bold text-foreground dark:text-white"
+            className="nav-item transition-colors px-4 py-2 text-2xl font-bold text-foreground dark:text-white"
           >
-            Reel Tasty
+            Reel Tasty!
           </Link>
           <div className="ml-4 md:hidden">
             <ThemeToggle />

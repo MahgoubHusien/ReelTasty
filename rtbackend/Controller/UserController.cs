@@ -48,7 +48,6 @@ namespace rtbackend.Controllers
         public IActionResult GetUserId()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Console.WriteLine($"Fetched userId from token: {userId}");
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -74,7 +73,6 @@ namespace rtbackend.Controllers
                 if (existingUser != null)
                 {
                     // Log message to check if this condition is triggered
-                    Console.WriteLine($"Email {model.Email} is already registered.");
                     return BadRequest("Email is already registered.");
                 }
 
@@ -130,8 +128,6 @@ namespace rtbackend.Controllers
             {
                 var token = GenerateJwtToken(user);
                 var refreshToken = GenerateRefreshToken();
-
-                Console.WriteLine($"Generated JWT Token: {token}");
 
                 return Ok(new { token, refreshToken });
             }

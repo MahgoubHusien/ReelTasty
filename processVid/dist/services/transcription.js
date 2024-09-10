@@ -73,7 +73,6 @@ function transcribeVideoFromS3(videoKey) {
 const videoKey = '6809834735611710721.mp4'; // Replace with the actual S3 key for the video
 transcribeVideoFromS3(videoKey)
     .then(transcript => {
-    console.log('Transcription:', transcript);
 })
     .catch(error => {
     console.error('Error:', error);

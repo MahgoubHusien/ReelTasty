@@ -20,7 +20,6 @@ const RecipeGenerationPage: React.FC = () => {
   
       if (match && match[1]) {
         const videoId = match[1];
-        console.log("Extracted Video ID:", videoId);
   
         router.push(`/recipeGeneration/${encodeURIComponent(videoId)}`);
       } else {

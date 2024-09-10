@@ -18,7 +18,6 @@ DotEnv.Load();
 // Get the JWT secret key from the environment variables
 string secret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
     ?? throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
-Console.WriteLine("JWT Secret loaded successfully.");
 
 // Set up CORS
 builder.Services.AddCors(options =>
@@ -54,12 +53,7 @@ var smtpSettings = new SmtpSettings
     Password = Environment.GetEnvironmentVariable("PASSWORD"),
     UseSsl = bool.Parse(Environment.GetEnvironmentVariable("USESSL"))
 };
-Console.WriteLine($"SMTP Server: {smtpSettings.Server}");
-Console.WriteLine($"SMTP Port: {smtpSettings.Port}");
-Console.WriteLine($"SMTP Sender Name: {smtpSettings.SenderName}");
-Console.WriteLine($"SMTP Sender Email: {smtpSettings.SenderEmail}");
-Console.WriteLine($"SMTP Username: {smtpSettings.Username}");
-Console.WriteLine($"SMTP Use SSL: {smtpSettings.UseSsl}");
+
 
 builder.Services.AddSingleton(smtpSettings);
 

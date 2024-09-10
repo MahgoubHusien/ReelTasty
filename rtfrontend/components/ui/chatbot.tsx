@@ -50,7 +50,6 @@ const Chatbot: React.FC<ChatbotProps> = ({ videoId, userId }) => {
     setLoading(true);
 
     try {
-      console.log('Sending user message to Node.js for OpenAI response:', input);
 
       const response = await axios.post(`${nodeApiBaseUrl}/api/chat`, {
         userId: userId || 'anonymous',  
@@ -67,14 +66,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ videoId, userId }) => {
       setMessages(updatedMessages);
 
       if (userId) {
-        console.log('Saving chat history to .NET backend...');
         
         await axios.post(`${apiBaseUrl}/api/Chat/save`, {
           userId,
           videoId,
           messages: updatedMessages.map((message) => ({ sender: message.sender, text: message.text })),
         });
-        console.log('Chat history saved successfully.');
       }
     } catch (error) {
       console.error('Error handling chat:', error);

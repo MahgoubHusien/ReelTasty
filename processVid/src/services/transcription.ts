@@ -30,7 +30,6 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
     const params = { Bucket: process.env.S3_BUCKET_NAME!, Key: fullKey };
   
     try {
-      console.log(`Fetching video from S3 with key "${fullKey}"...`);
       const { Body } = await s3.send(new GetObjectCommand(params));
       
       if (!Body) {
@@ -48,17 +47,14 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
         fileStream.on('error', reject);
       });
   
-      console.log('Converting video to mp3...');
       await execPromise(`ffmpeg -i ${videoFilePath} -q:a 0 -map a ${mp3FilePath}`);
   
-      console.log('Sending mp3 file to OpenAI for transcription...');
       const transcription: TranscriptionResponse = await openai.audio.transcriptions.create({
         file: fs.createReadStream(mp3FilePath),
         model: 'whisper-1',
         response_format: 'text',
       });
   
-      console.log('Full OpenAI API response:', transcription);
   
       if (fs.existsSync(videoFilePath)) {
         fs.unlinkSync(videoFilePath);

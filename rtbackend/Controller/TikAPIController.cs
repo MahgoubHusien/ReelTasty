@@ -75,7 +75,6 @@ public class TikAPIController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error adding video metadata: {ex.Message}");
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
@@ -103,12 +102,10 @@ public class TikAPIController : ControllerBase
         }
         catch (AmazonS3Exception s3Ex)  
         {
-            Console.WriteLine($"S3 error uploading video: {s3Ex.Message}");
             return StatusCode(500, $"S3 internal server error: {s3Ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error uploading video: {ex.Message}");
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
         finally
@@ -141,7 +138,6 @@ public class TikAPIController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching video by ID: {ex.Message}");
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, new { error = "Error fetching video." });
         }
     }
@@ -166,7 +162,6 @@ public class TikAPIController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching video URL by ID: {ex.Message}");
             return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, "Error fetching video URL.");
         }
     }
@@ -378,7 +373,6 @@ public class TikAPIController : ControllerBase
 
         var videos = await _tikApi.GetSubmittedVideosByUserAsync(userId);
 
-        Console.WriteLine($"Fetched videos for user {userId}: {JsonConvert.SerializeObject(videos)}");
 
         return Ok(videos);
     }

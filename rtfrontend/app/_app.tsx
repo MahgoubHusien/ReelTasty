@@ -9,7 +9,6 @@ function MyApp({ Component, pageProps }: AppProps) {
   let timeoutId: NodeJS.Timeout;
 
   const handleInactivityLogout = useCallback(() => {
-    console.log("45 minutes of inactivity, logging out and redirecting...");
     localStorage.removeItem("authToken");
     router.push("/"); 
   }, [router]);
@@ -30,7 +29,6 @@ function MyApp({ Component, pageProps }: AppProps) {
     const token = localStorage.getItem("authToken");
     
     if (!token) {
-      console.log("No token found, redirecting to home...");
       router.push("/");
     }
 
