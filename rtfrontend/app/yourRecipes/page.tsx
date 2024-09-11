@@ -139,7 +139,7 @@ const YourVideosPage: React.FC = () => {
 
         {recentlySeenVideos.length === 0 && savedVideos.length === 0 && submittedVideos.length === 0 && (
           <div className="w-full text-center mt-12">
-            <p className="text-gray-500">You don't have any videos yet.</p>
+            <p className="text-gray-500">You don&apos;t have any videos yet.</p>
           </div>
         )}
       </div>

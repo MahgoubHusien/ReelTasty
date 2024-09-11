@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger } from 'framer-motion';
 import { FaBars } from 'react-icons/fa';
@@ -55,7 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
     }
   }, []);
 
-  const fetchUsername = async (token: string) => {
+  const fetchUsername = useCallback(async (token: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/User/Profile`, {
         method: "GET",
@@ -76,14 +76,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
       console.error("Error fetching username:", error);
       handleLogout();
     }
-  };
+  }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("authToken");
     setIsLoggedIn(false);
     setUsername('');
     router.push("/auth?view=login");
-  };
+  }, [router]);
 
   const navItemStyle = (page: string) => ({
     color: 'inherit',
