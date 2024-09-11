@@ -64,3 +64,5 @@ processVid/.env
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+rtbackend/local_db_dump.sql
