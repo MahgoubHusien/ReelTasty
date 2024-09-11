@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import type { AppProps } from "next/app";
 
@@ -6,7 +6,7 @@ const INACTIVITY_LIMIT = 45 * 60 * 1000;
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  let timeoutId: NodeJS.Timeout;
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleInactivityLogout = useCallback(() => {
     localStorage.removeItem("authToken");
@@ -14,11 +14,11 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, [router]);
 
   const resetTimer = useCallback(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
     }
 
-    timeoutId = setTimeout(handleInactivityLogout, INACTIVITY_LIMIT);
+    timeoutIdRef.current = setTimeout(handleInactivityLogout, INACTIVITY_LIMIT);
   }, [handleInactivityLogout]);
 
   const trackUserActivity = useCallback(() => {
@@ -27,7 +27,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    
+
     if (!token) {
       router.push("/");
     }
@@ -38,7 +38,9 @@ function MyApp({ Component, pageProps }: AppProps) {
     window.addEventListener("keydown", trackUserActivity);
 
     return () => {
-      clearTimeout(timeoutId);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
       window.removeEventListener("mousemove", trackUserActivity);
       window.removeEventListener("keydown", trackUserActivity);
     };

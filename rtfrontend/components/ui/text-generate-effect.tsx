@@ -26,28 +26,28 @@ export const TextGenerateEffect = ({
         filter: filter ? "blur(0px)" : "none",
       },
       {
-        duration: duration ? duration : 1,
+        duration: duration || 1, 
         delay: stagger(0.2),
       }
     );
-  }, [scope.current]);
+  }, [animate, filter, duration]); 
 
   const renderWords = () => {
     return (
       <motion.div ref={scope}>
-        {wordsArray.map((word, idx) => {
-          return (
-            <motion.span
-              key={word + idx}
-              className={`opacity-0 ${idx === 1 || idx === 3 ? 'text-[#CBACF9]' : 'dark:text-white text-black'}`} // Ensure text-purple-500 is defined in your CSS
-              style={{
-                filter: filter ? "blur(10px)" : "none",
-              }}
-            >
-              {word}{" "}
-            </motion.span>
-          );
-        })}
+        {wordsArray.map((word, idx) => (
+          <motion.span
+            key={word + idx}
+            className={`opacity-0 ${
+              idx === 1 || idx === 3 ? "text-[#CBACF9]" : "dark:text-white text-black"
+            }`}
+            style={{
+              filter: filter ? "blur(10px)" : "none",
+            }}
+          >
+            {word}{" "}
+          </motion.span>
+        ))}
       </motion.div>
     );
   };

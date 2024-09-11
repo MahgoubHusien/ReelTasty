@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { animate, stagger } from 'framer-motion';
 import { FaBars } from 'react-icons/fa';
@@ -24,23 +24,24 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
   const toggleMenu = () => setIsOpen(!isOpen);
   const toggleDropdown = () => setShowDropdown(!showDropdown);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollPos = window.pageYOffset;
-      setIsScrolled(currentScrollPos > 50);
-      setIsVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
-      setPrevScrollPos(currentScrollPos);
-    };
-
-    setPrevScrollPos(window.pageYOffset);
-    window.addEventListener('scroll', handleScroll);
-
-    return () => window.removeEventListener('scroll', handleScroll);
+  const handleScroll = useCallback(() => {
+    const currentScrollPos = window.pageYOffset;
+    setIsScrolled(currentScrollPos > 50);
+    setIsVisible(prevScrollPos > currentScrollPos || currentScrollPos < 10);
+    setPrevScrollPos(currentScrollPos);
   }, [prevScrollPos]);
 
   useEffect(() => {
-    const navItems = document.querySelectorAll('.nav-item');
-    animate(navItems, { opacity: [0, 1], y: [-10, 0] }, { duration: 0.3, delay: stagger(0.05) });
+    window.addEventListener('scroll', handleScroll);
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const navItems = document.querySelectorAll('.nav-item');
+      animate(navItems, { opacity: [0, 1], y: [-10, 0] }, { duration: 0.3, delay: stagger(0.05) });
+    }
   }, [isOpen]);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
     } else {
       setIsLoggedIn(false);
     }
-  }, [isLoggedIn]);
+  }, []);
 
   const fetchUsername = async (token: string) => {
     try {
@@ -79,7 +80,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
-    localStorage.removeItem("username");
     setIsLoggedIn(false);
     setUsername('');
     router.push("/auth?view=login");

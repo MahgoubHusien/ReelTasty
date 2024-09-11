@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import VideoGrid from "../../components/ui/VideoGrid";
 import { fetchRecentlySeenVideos, fetchSavedVideos, fetchSubmittedVideos, fetchUserId } from "@/service/api";
 import { VideoMetaData } from "@/types/types"; 
@@ -18,7 +18,9 @@ const YourVideosPage: React.FC = () => {
   const [initialLoading, setInitialLoading] = useState(true); 
   const router = useRouter(); 
 
-  useEffect(() => {
+  const timeoutId = useRef<NodeJS.Timeout | null>(null); 
+
+  const checkAuthStatus = useCallback(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       setIsLoggedIn(true);
@@ -26,46 +28,57 @@ const YourVideosPage: React.FC = () => {
       setIsLoggedIn(false);
     }
     setInitialLoading(false); 
-  }, []);
+  }, []); 
+
+  useEffect(() => {
+    timeoutId.current = setTimeout(() => {
+      checkAuthStatus();
+    }, 500);
+
+    return () => {
+      if (timeoutId.current) {
+        clearTimeout(timeoutId.current); 
+      }
+    };
+  }, [checkAuthStatus]);
 
   useEffect(() => {
     if (!isLoggedIn && !initialLoading) {
       router.push("/auth?view=login");
       return;
     }
-  
+
     const fetchAllData = async () => {
       try {
         const userId = await fetchUserId();
         if (!userId) {
           throw new Error("User ID is missing");
         }
-  
+
         const [recentlySeen, saved, submitted] = await Promise.all([
           fetchRecentlySeenVideos(),
           fetchSavedVideos(),
           fetchSubmittedVideos()
         ]);
- 
+
         setRecentlySeenVideos(recentlySeen || []);
         setSavedVideos(saved || []);
-  
+
         const submittedVideoMetaData = submitted?.map(submission => submission.videoMetaData) || [];
         setSubmittedVideos(submittedVideoMetaData);
-  
+
       } catch (err) {
         setError("Failed to fetch videos. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
-  
+
     if (isLoggedIn && !initialLoading) {
       fetchAllData();
     }
   }, [isLoggedIn, initialLoading, router]);
-  
-        
+
   if (initialLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center">
