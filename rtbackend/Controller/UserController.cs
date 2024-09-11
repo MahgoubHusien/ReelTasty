@@ -62,21 +62,17 @@ namespace rtbackend.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Check if passwords match
                 if (model.Password != model.ConfirmPassword)
                 {
                     return BadRequest("Passwords do not match.");
                 }
 
-                // Check if the email is already registered
                 var existingUser = await _userManager.FindByEmailAsync(model.Email);
                 if (existingUser != null)
                 {
-                    // Log message to check if this condition is triggered
                     return BadRequest("Email is already registered.");
                 }
 
-                // Create a new user
                 var user = new User
                 {
                     UserName = model.Username,
@@ -87,12 +83,10 @@ namespace rtbackend.Controllers
 
                 if (result.Succeeded)
                 {
-                    // Generate email confirmation token
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     var callbackUrl = Url.Action(nameof(ConfirmEmail), "User",
                         new { userId = user.Id, code }, Request.Scheme);
 
-                    // Send email confirmation
                     await _emailSender.SendEmailAsync(
                         model.Email,
                         "Confirm your email",

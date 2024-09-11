@@ -421,7 +421,7 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         VideoMetaData: videoMetaData
     };
 
-    console.log("JSON data being sent:", JSON.stringify(jsonData, null, 2)); // Pretty-print JSON in the console
+    console.log("JSON data being sent:", JSON.stringify(jsonData, null, 2)); 
 
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/SubmitTikTokLink`, {
@@ -433,7 +433,7 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
             body: JSON.stringify(jsonData),
         });
 
-        const responseData = await response.json(); // Log the response JSON
+        const responseData = await response.json(); 
         console.log("Response JSON:", responseData);
 
         if (!response.ok) {

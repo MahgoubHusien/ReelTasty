@@ -43,36 +43,30 @@ const VideoDetailPage: React.FC = () => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          setLoading(true); // Start loading state
+          setLoading(true);  
 
-          // First, attempt to fetch the video by ID
           let videoResponse = await fetchVideoById(videoId);
           let videoMetadata = videoResponse?.video;
 
-          // If video metadata is not found, process the video
           if (!videoMetadata) {
             videoResponse = await fetchProcessedVideo(videoId);
             videoMetadata = videoResponse?.video || videoResponse;
           }
 
-          // Only proceed if videoMetadata is available
           if (videoMetadata) {
             setVideoData(videoMetadata);
             const url = await fetchVideoUrlById(videoId);
             setVideoUrl(videoMetadata.s3Url || url);
 
-            // Handle TikTok link submission if not already done
             if (!isSubmitted) {
               const tiktokLink = `https://www.tiktok.com/${videoId}`;
               await submitTikTokLink(tiktokLink, videoMetadata);
               setIsSubmitted(true);
             }
 
-            // Fetch transcription data
             const transcriptionData = await fetchTranscription(videoId);
             setTranscription(transcriptionData);
 
-            // Generate a recipe based on transcription and video metadata
             if (transcriptionData) {
               const combinedText = `
                 Video Description: ${videoMetadata.description || 'No description available'}.
@@ -90,7 +84,6 @@ const VideoDetailPage: React.FC = () => {
               setRecipe(botMessage);
             }
 
-            // Handle user actions (saving video, etc.) if logged in
             if (isLoggedIn) {
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
@@ -102,7 +95,6 @@ const VideoDetailPage: React.FC = () => {
               }
             }
           } else {
-            // Handle the case where no video metadata is found
             setVideoData(null);
             setVideoUrl(null);
           }
@@ -110,7 +102,7 @@ const VideoDetailPage: React.FC = () => {
           console.error("Error occurred during fetchData:", err);
           setError(err.message);
         } finally {
-          setLoading(false); // End loading state
+          setLoading(false); 
         }
       };
 

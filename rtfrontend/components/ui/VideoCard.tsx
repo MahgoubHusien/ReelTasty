@@ -16,7 +16,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
 
   return (
     <Link href={`/trendingFoods/${video.videoId}`}>
-      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px] h-[595px]">
+      <div className="cursor-pointer bg-card dark:bg-card-dark p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow min-w-[250px] h-[620px]">
         <video
           src={video.s3Url}
           controls
@@ -24,9 +24,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
         />
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center space-x-4">
-
             <div>
-              <h3 className="text-lg font-semibold text-foreground dark:text-foreground-dark">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
                 {video.author}
               </h3>
             </div>
@@ -35,7 +34,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
         
         {video.description ? (
           <>
-            <p className="text-sm text-foreground dark:text-foreground-dark">
+            <p className="text-sm text-black dark:text-white">
               {showMore || video.description.length <= maxDescriptionLength
                 ? video.description
                 : `${video.description.slice(0, maxDescriptionLength)}...`}
@@ -56,19 +55,31 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
           <p className="text-sm text-muted dark:text-muted-dark">No description available.</p>
         )}
 
-        <div className="mt-4">
+        <div className="mt-2">
           {video.stats && (
-            <div className="flex justify-between text-sm text-muted dark:text-muted-dark">
-              <span>Likes: {video.stats.diggCount ?? "N/A"}</span>
-              <span>Comments: {video.stats.commentCount ?? "N/A"}</span>
-              <span>Shares: {video.stats.shareCount ?? "N/A"}</span>
+            <div className="flex justify-around text-sm text-black dark:text-white">
+              <div className="flex-1 text-center">
+                <span>Likes: {video.stats.diggCount ?? "N/A"}</span>
+              </div>
+              <div className="flex-1 text-center">
+                <span>Comments: {video.stats.commentCount ?? "N/A"}</span>
+              </div>
+              <div className="flex-1 text-center">
+                <span>Shares: {video.stats.shareCount ?? "N/A"}</span>
+              </div>
             </div>
           )}
           {video.authorStats && (
-            <div className="flex justify-between text-sm text-muted dark:text-muted-dark mt-2">
-              <span>Followers: {video.authorStats.followerCount ?? "N/A"}</span>
-              <span>Following: {video.authorStats.followingCount ?? "N/A"}</span>
-              <span>Videos: {video.authorStats.videoCount ?? "N/A"}</span>
+            <div className="flex justify-around text-sm text-black dark:text-white mt-2">
+              <div className="flex-1 text-center">
+                <span>Followers: {video.authorStats.followerCount ?? "N/A"}</span>
+              </div>
+              <div className="flex-1 text-center">
+                <span>Following: {video.authorStats.followingCount ?? "N/A"}</span>
+              </div>
+              <div className="flex-1 text-center">
+                <span>Videos: {video.authorStats.videoCount ?? "N/A"}</span>
+              </div>
             </div>
           )}
         </div>

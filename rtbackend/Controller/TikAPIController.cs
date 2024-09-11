@@ -344,7 +344,6 @@ public class TikAPIController : ControllerBase
             return BadRequest("TikTok link and user ID are required.");
         }
 
-        // Log the received JSON model
         Console.WriteLine("Received JSON data: ");
         Console.WriteLine($"TikTokLink: {model.TikTokLink}");
         Console.WriteLine($"UserId: {model.UserId}");
@@ -357,17 +356,15 @@ public class TikAPIController : ControllerBase
         }
 
         var result = await _tikApi.SubmitTikTokLinkAsync(userId, model.TikTokLink, model.VideoMetaData.VideoId);
+        Console.WriteLine($"RESULTS: {result}");
+
         if (result)
         {
-            return Ok("TikTok link submitted successfully.");
+            return Ok(new { message = "TikTok link submitted successfully." });
         }
 
         return BadRequest("Failed to submit TikTok link.");
     }
-
-
-
-
     
     [Authorize]
     [HttpGet("GetSubmittedVideos")]

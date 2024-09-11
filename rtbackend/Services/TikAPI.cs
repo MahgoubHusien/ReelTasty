@@ -8,6 +8,8 @@ using Amazon.S3.Model;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer; 
+using Newtonsoft.Json;
+using System.Text.Json;
 
 
 public class TikApi
@@ -140,8 +142,8 @@ public class TikApi
                 Description = reader.GetString(2),
                 Hashtags = reader.GetString(3),
                 S3Url = reader.GetString(4),
-                AvatarLargeUrl = reader.GetString(5),  // New property
-                Stats = new VideoStats // Use the new VideoStats class for stats
+                AvatarLargeUrl = reader.GetString(5),
+                Stats = new VideoStats 
                 {
                     DiggCount = reader.IsDBNull(6) ? (int?)null : reader.GetInt32(6),
                     CommentCount = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
@@ -232,8 +234,8 @@ public class TikApi
                 Description = reader.GetString(2),
                 Hashtags = reader.GetString(3),
                 S3Url = reader.GetString(4),
-                AvatarLargeUrl = reader.GetString(5), // New property
-                Stats = new VideoStats // Populate VideoStats
+                AvatarLargeUrl = reader.GetString(5),
+                Stats = new VideoStats 
                 {
                     DiggCount = reader.IsDBNull(6) ? (int?)null : reader.GetInt32(6),
                     CommentCount = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
@@ -277,18 +279,15 @@ public class TikApi
                 collect_count, create_time 
             FROM tiktok_videos";
 
-        // If a hashtag is provided, add a WHERE clause to filter the results
         if (!string.IsNullOrEmpty(hashtag))
         {
             query += " WHERE hashtags LIKE @Hashtag";
         }
 
-        // Order the results by create_time in reverse chronological order
         query += " ORDER BY create_time DESC";
 
         using var cmd = new NpgsqlCommand(query, connection);
 
-        // If a hashtag is provided, bind it to the parameter
         if (!string.IsNullOrEmpty(hashtag))
         {
             cmd.Parameters.AddWithValue("@Hashtag", $"%{hashtag}%");
@@ -378,7 +377,7 @@ public class TikApi
         cmd.Parameters.AddWithValue("@Description", videoMetadata.Description);
         cmd.Parameters.AddWithValue("@Hashtags", videoMetadata.Hashtags);
         cmd.Parameters.AddWithValue("@S3Url", videoMetadata.S3Url);
-        cmd.Parameters.AddWithValue("@AvatarLargeUrl", videoMetadata.AvatarLargeUrl);  // New property
+        cmd.Parameters.AddWithValue("@AvatarLargeUrl", videoMetadata.AvatarLargeUrl);  
         cmd.Parameters.AddWithValue("@DiggCount", videoMetadata.Stats.DiggCount ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@CommentCount", videoMetadata.Stats.CommentCount ?? (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@ShareCount", videoMetadata.Stats.ShareCount ?? (object)DBNull.Value);
@@ -496,8 +495,8 @@ public class TikApi
                 Description = reader.GetString(2),
                 Hashtags = reader.GetString(3),
                 S3Url = reader.GetString(4),
-                AvatarLargeUrl = reader.GetString(5), // New property
-                Stats = new VideoStats // Populate VideoStats
+                AvatarLargeUrl = reader.GetString(5),
+                Stats = new VideoStats 
                 {
                     DiggCount = reader.IsDBNull(6) ? (int?)null : reader.GetInt32(6),
                     CommentCount = reader.IsDBNull(7) ? (int?)null : reader.GetInt32(7),
@@ -515,7 +514,6 @@ public class TikApi
     using var connection = new NpgsqlConnection(_connectionString);
     await connection.OpenAsync();
 
-    // Check if the user has already submitted this video
     var checkQuery = @"
         SELECT COUNT(1) 
         FROM submitted_videos 
@@ -524,7 +522,6 @@ public class TikApi
 
     using (var checkCmd = new NpgsqlCommand(checkQuery, connection))
     {
-        // Pass the userId and videoId as text, no need for UUID casting
         checkCmd.Parameters.AddWithValue("@UserId", NpgsqlTypes.NpgsqlDbType.Text, userId);
         checkCmd.Parameters.AddWithValue("@VideoId", NpgsqlTypes.NpgsqlDbType.Text, videoId);
 
@@ -532,12 +529,10 @@ public class TikApi
 
         if (submissionExists)
         {
-            // Return false to indicate that the submission already exists
             return false;
         }
     }
 
-    // Proceed with inserting the new submission if it does not exist
     var insertQuery = @"
         INSERT INTO submitted_videos (user_id, tiktok_link, video_id)
         VALUES (@UserId, @TikTokLink, @VideoId)";
@@ -597,7 +592,7 @@ public class TikApi
             UserId = reader.GetString(1),
             TikTokLink = reader.GetString(2),
             SubmittedAt = reader.GetDateTime(3),
-            VideoMetaData = videoMetadata // Ensure you use the correct case here
+            VideoMetaData = videoMetadata  
         });
     }
 

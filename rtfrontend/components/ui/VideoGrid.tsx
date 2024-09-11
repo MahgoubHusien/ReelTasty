@@ -8,6 +8,7 @@ interface VideoGridProps {
 }
 
 const VideoGrid: React.FC<VideoGridProps> = ({ hashtag, videos }) => {
+  console.log(videos)
   return (
     <section className="mb-12">
       <div
