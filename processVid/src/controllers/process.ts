@@ -9,16 +9,6 @@ import { Pool } from 'pg';
 
 dotenv.config();
 
-const app = express();
-app.use(
-  cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-  })
-);
-
-const port = process.env.PORT || 3000;
-
 const api = TikAPI(process.env.TIKAPI_KEY);
 
 const s3 = new AWS.S3({
@@ -47,7 +37,7 @@ interface VideoMetadata {
 }
 
 
-const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
+//const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
 
 const storeVideoMetadataInDB = async (videoMetadata: VideoMetadata) => {
   try {
@@ -126,9 +116,6 @@ export const processHashtag = async (hashtag: string) => {
       for (const item of videos) {
         const description = item.desc.toLowerCase();
 
-        if (excludedKeywords.some(keyword => description.includes(keyword))) {
-          continue;
-        }
 
         const videoMetadata: VideoMetadata = {
           videoId: item.id,
@@ -182,10 +169,6 @@ export const processVideo = async (videoId: string) => {
 
     const item = videoResponse.json.itemInfo.itemStruct;
     const description = item.desc.toLowerCase();
-
-    if (excludedKeywords.some(keyword => description.includes(keyword))) {
-      return { error: "Excluded content." };
-    }
 
     const videoMetadata: VideoMetadata = {
       videoId: item.id,

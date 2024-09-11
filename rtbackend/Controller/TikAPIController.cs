@@ -61,7 +61,7 @@ public class TikAPIController : ControllerBase
     }
 
     [HttpPost("AddVideo")]
-    public async Task<IActionResult> AddVideo([FromBody] VideoMetadata videoMetadata)
+    public async Task<IActionResult> AddVideo([FromBody] VideoMetaData videoMetadata)
     {
         if (videoMetadata == null)
         {
@@ -281,7 +281,7 @@ public class TikAPIController : ControllerBase
 
     [HttpGet("SavedVideos")]
     [Authorize]
-    public async Task<ActionResult<List<VideoMetadata>>> GetSavedVideos()
+    public async Task<ActionResult<List<VideoMetaData>>> GetSavedVideos()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -336,7 +336,6 @@ public class TikAPIController : ControllerBase
         return Ok(new { IsSaved = isSaved });
     }
 
-    [Authorize]
     [HttpPost("SubmitTikTokLink")]
     public async Task<IActionResult> SubmitTikTokLink([FromBody] TikTokLinkSubmission model)
     {
@@ -345,13 +344,19 @@ public class TikAPIController : ControllerBase
             return BadRequest("TikTok link and user ID are required.");
         }
 
+        // Log the received JSON model
+        Console.WriteLine("Received JSON data: ");
+        Console.WriteLine($"TikTokLink: {model.TikTokLink}");
+        Console.WriteLine($"UserId: {model.UserId}");
+        Console.WriteLine($"VideoMetaData: {JsonConvert.SerializeObject(model.VideoMetaData, Formatting.Indented)}");
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId) || userId != model.UserId)
         {
             return Unauthorized("User ID does not match.");
         }
 
-        var result = await _tikApi.SubmitTikTokLinkAsync(userId, model.TikTokLink, model.VideoMetadata.VideoId); 
+        var result = await _tikApi.SubmitTikTokLinkAsync(userId, model.TikTokLink, model.VideoMetaData.VideoId);
         if (result)
         {
             return Ok("TikTok link submitted successfully.");
@@ -359,6 +364,9 @@ public class TikAPIController : ControllerBase
 
         return BadRequest("Failed to submit TikTok link.");
     }
+
+
+
 
     
     [Authorize]

@@ -6,6 +6,6 @@ namespace rtbackend.Models
         public string UserId { get; set; } 
         public string TikTokLink { get; set; } 
         public DateTime SubmittedAt { get; set; }
-        public VideoMetadata VideoMetaData { get; set; } 
+        public VideoMetaData VideoMetaData { get; set; } 
     }
 }

@@ -5,10 +5,9 @@ import { useParams } from "next/navigation";
 import { fetchVideoById, fetchVideoUrlById, checkIfVideoIsSaved, saveVideoForUser, unsaveVideoForUser, fetchUserId, addToRecentlySeen, fetchTranscription } from "@/service/api";
 import { submitTikTokLink } from "@/service/api";
 import { VideoMetaData } from "@/types/types";
-import Chatbot from "@/components/ui/chatbot";
-import { AiOutlineRobot } from "react-icons/ai";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import 'dotenv/config';
+import { AiOutlineLoading3Quarters, AiOutlineRobot } from "react-icons/ai";
+import Chatbot from "@/components/ui/chatbot";
 
 const VideoDetailPage: React.FC = () => {
   const params = useParams();
@@ -25,11 +24,16 @@ const VideoDetailPage: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
   const fetchProcessedVideo = async (videoId: string) => {
-    const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
-    if (!res.ok) {
-      throw new Error("Failed to process video");
+    try {
+      const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
+      if (!res.ok) {
+        throw new Error("Failed to process video");
+      }
+      return await res.json();
+    } catch (error) {
+      console.error(`Error processing video: ${error}`);
+      throw error;
     }
-    return res.json();
   };
 
   useEffect(() => {
@@ -39,35 +43,41 @@ const VideoDetailPage: React.FC = () => {
     if (videoId) {
       const fetchData = async () => {
         try {
-          let videoResponse = await fetchVideoById(videoId);
-          const videoMetadata = videoResponse?.video;
+          setLoading(true); // Start loading state
 
-          if (!videoResponse || !videoMetadata) {
+          // First, attempt to fetch the video by ID
+          let videoResponse = await fetchVideoById(videoId);
+          let videoMetadata = videoResponse?.video;
+
+          // If video metadata is not found, process the video
+          if (!videoMetadata) {
             videoResponse = await fetchProcessedVideo(videoId);
+            videoMetadata = videoResponse?.video || videoResponse;
           }
 
-          const finalVideoMetadata = videoResponse?.video || videoResponse;
-
-          if (finalVideoMetadata) {
-            setVideoData(finalVideoMetadata);
+          // Only proceed if videoMetadata is available
+          if (videoMetadata) {
+            setVideoData(videoMetadata);
             const url = await fetchVideoUrlById(videoId);
-            setVideoUrl(finalVideoMetadata.s3Url || url);
+            setVideoUrl(videoMetadata.s3Url || url);
 
+            // Handle TikTok link submission if not already done
             if (!isSubmitted) {
               const tiktokLink = `https://www.tiktok.com/${videoId}`;
-              await submitTikTokLink(tiktokLink, finalVideoMetadata);
+              await submitTikTokLink(tiktokLink, videoMetadata);
               setIsSubmitted(true);
             }
 
+            // Fetch transcription data
             const transcriptionData = await fetchTranscription(videoId);
             setTranscription(transcriptionData);
 
+            // Generate a recipe based on transcription and video metadata
             if (transcriptionData) {
               const combinedText = `
-                Video Description: ${finalVideoMetadata.description || 'No description available'}.
+                Video Description: ${videoMetadata.description || 'No description available'}.
                 Transcription: ${transcriptionData || 'No transcription available'}.
               `;
-
               const recipeResponse = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -76,11 +86,11 @@ const VideoDetailPage: React.FC = () => {
                   videoId,
                 }),
               });
-
               const { botMessage } = await recipeResponse.json();
               setRecipe(botMessage);
             }
 
+            // Handle user actions (saving video, etc.) if logged in
             if (isLoggedIn) {
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
@@ -88,28 +98,26 @@ const VideoDetailPage: React.FC = () => {
               const fetchedUserId = await fetchUserId();
               if (fetchedUserId) {
                 setUserId(fetchedUserId);
-                const addedToRecentlySeen = await addToRecentlySeen(fetchedUserId, videoId);
-                if (!addedToRecentlySeen) {
-                  console.error("Failed to add video to recently seen.");
-                }
-              } else {
-                console.error("User ID is not available.");
+                await addToRecentlySeen(fetchedUserId, videoId);
               }
             }
           } else {
+            // Handle the case where no video metadata is found
             setVideoData(null);
             setVideoUrl(null);
           }
-        } catch (err: any) {
+        } catch (err) {
+          console.error("Error occurred during fetchData:", err);
           setError(err.message);
         } finally {
-          setLoading(false);
+          setLoading(false); // End loading state
         }
       };
 
       fetchData();
     }
   }, [videoId, isSubmitted, isLoggedIn]);
+
 
   const handleSave = async () => {
     if (!isLoggedIn) {
@@ -177,7 +185,6 @@ const VideoDetailPage: React.FC = () => {
             <p>Comments: {videoData.commentCount ?? "N/A"}</p>
             <p>Shares: {videoData.shareCount ?? "N/A"}</p>
             <p>Play Count: {videoData.playCount ?? "N/A"}</p>
-            <p>Collect Count: {videoData.collectCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description

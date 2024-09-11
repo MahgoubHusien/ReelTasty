@@ -175,7 +175,7 @@ const isGuid = (value: string): boolean => {
 export const fetchVideoById = async (videoId: string): Promise<VideoMetaData | null> => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/Video?videoId=${encodeURIComponent(videoId)}`);
-        
+        console.log("Response", response)
         if (response.status === 404) {
             console.warn(`Video with ID: ${videoId} not found.`);
             return null;  
@@ -186,6 +186,7 @@ export const fetchVideoById = async (videoId: string): Promise<VideoMetaData | n
         }
 
         const data = await response.json();
+        console.log(data)
         return data as VideoMetaData;
     } catch (error) {
         console.error("Error fetching video by ID:", error);
@@ -414,6 +415,14 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         return false;
     }
 
+    const jsonData = {
+        TikTokLink: tiktokLink,
+        UserId: userId,
+        VideoMetaData: videoMetaData
+    };
+
+    console.log("JSON data being sent:", JSON.stringify(jsonData, null, 2)); // Pretty-print JSON in the console
+
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/SubmitTikTokLink`, {
             method: 'POST',
@@ -421,14 +430,14 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                TikTokLink: tiktokLink,
-                UserId: userId, 
-                VideoMetaData: videoMetaData
-            }),
+            body: JSON.stringify(jsonData),
         });
 
+        const responseData = await response.json(); // Log the response JSON
+        console.log("Response JSON:", responseData);
+
         if (!response.ok) {
+            console.error('Error response from server:', responseData);
             throw new Error("Failed to submit TikTok link");
         }
 
@@ -438,6 +447,9 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         return false;
     }
 };
+
+
+
 
 
 export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMetadata[] | null> => {

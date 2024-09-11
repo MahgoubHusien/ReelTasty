@@ -59,7 +59,6 @@ const TikTokDetailPage: React.FC = () => {
               const { botMessage } = await recipeResponse.json();
               setRecipe(botMessage);
             }
-  
             if (isLoggedIn) {
               const { isSaved } = await checkIfVideoIsSaved(videoId);
               setIsSaved(isSaved);
@@ -189,7 +188,6 @@ const TikTokDetailPage: React.FC = () => {
             <p>Comments: {videoData.commentCount ?? "N/A"}</p>
             <p>Shares: {videoData.shareCount ?? "N/A"}</p>
             <p>Play Count: {videoData.playCount ?? "N/A"}</p>
-            <p>Collect Count: {videoData.collectCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description
