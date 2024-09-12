@@ -20,7 +20,7 @@ const TrendingFoodsPage: React.FC = () => {
         const videoData: { [key: string]: any[] } = {};
         for (const hashtag of hashtags) {
           const data = await fetchVideos(hashtag);
-          videoData[hashtag] = data;
+          videoData[hashtag] = data ?? [];
         }
         setVideos(videoData);
       } catch (err) {
