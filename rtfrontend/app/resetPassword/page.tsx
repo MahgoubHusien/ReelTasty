@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const ResetPasswordPage: React.FC = () => {
+const ResetPasswordForm: React.FC = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // New state for submission
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -126,6 +126,14 @@ const ResetPasswordPage: React.FC = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const ResetPasswordPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 };
 
