@@ -46,10 +46,12 @@ const VideoDetailPage: React.FC = () => {
           setLoading(true);  
 
           let videoResponse = await fetchVideoById(videoId);
+          // @ts-ignore
           let videoMetadata = videoResponse?.video;
 
           if (!videoMetadata) {
             videoResponse = await fetchProcessedVideo(videoId);
+            // @ts-ignore
             videoMetadata = videoResponse?.video || videoResponse;
           }
 
@@ -98,9 +100,12 @@ const VideoDetailPage: React.FC = () => {
             setVideoData(null);
             setVideoUrl(null);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error occurred during fetchData:", err);
-          setError(err.message);
+          
+          // Safely access the error message
+          const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+          setError(errorMessage);
         } finally {
           setLoading(false); 
         }
@@ -173,10 +178,10 @@ const VideoDetailPage: React.FC = () => {
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Video Stats
             </h2>
-            <p>Likes: {videoData.diggCount ?? "N/A"}</p>
-            <p>Comments: {videoData.commentCount ?? "N/A"}</p>
-            <p>Shares: {videoData.shareCount ?? "N/A"}</p>
-            <p>Play Count: {videoData.playCount ?? "N/A"}</p>
+            <p>Likes: {videoData.stats?.diggCount ?? "N/A"}</p>
+            <p>Comments: {videoData.stats?.commentCount ?? "N/A"}</p>
+            <p>Shares: {videoData.stats?.shareCount ?? "N/A"}</p>
+            <p>Play Count: {videoData.stats?.playCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description

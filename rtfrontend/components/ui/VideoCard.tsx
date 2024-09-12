@@ -54,35 +54,6 @@ const VideoCard: React.FC<VideoCardProps> = ({ video }) => {
         ) : (
           <p className="text-sm text-muted dark:text-muted-dark">No description available.</p>
         )}
-
-        <div className="mt-2">
-          {video.stats && (
-            <div className="flex justify-around text-sm text-black dark:text-white">
-              <div className="flex-1 text-center">
-                <span>Likes: {video.stats.diggCount ?? "N/A"}</span>
-              </div>
-              <div className="flex-1 text-center">
-                <span>Comments: {video.stats.commentCount ?? "N/A"}</span>
-              </div>
-              <div className="flex-1 text-center">
-                <span>Shares: {video.stats.shareCount ?? "N/A"}</span>
-              </div>
-            </div>
-          )}
-          {video.authorStats && (
-            <div className="flex justify-around text-sm text-black dark:text-white mt-2">
-              <div className="flex-1 text-center">
-                <span>Followers: {video.authorStats.followerCount ?? "N/A"}</span>
-              </div>
-              <div className="flex-1 text-center">
-                <span>Following: {video.authorStats.followingCount ?? "N/A"}</span>
-              </div>
-              <div className="flex-1 text-center">
-                <span>Videos: {video.authorStats.videoCount ?? "N/A"}</span>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </Link>
   );

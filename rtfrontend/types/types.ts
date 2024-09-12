@@ -7,6 +7,13 @@ export interface AuthorStats {
     videoCount?: number;
 }
 
+export interface stats {
+  commentCount?: number;
+  diggCount?: number;
+  playCount?: number;
+  shareCount?: number;
+}
+
 export interface VideoMetaData {
     videoId: string;
     s3Url: string;
@@ -16,10 +23,7 @@ export interface VideoMetaData {
     description: string;
     hashtags: string | string[];
     collectCount?: number;
-    commentCount?: number;
-    diggCount?: number;
-    playCount?: number;
-    shareCount?: number;
+    stats?: stats;
   }
   
 export interface TikTokLinkSubmissionWithMetadata {

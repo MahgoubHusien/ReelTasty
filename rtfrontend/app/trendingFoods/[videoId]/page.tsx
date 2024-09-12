@@ -31,7 +31,9 @@ const TikTokDetailPage: React.FC = () => {
         try {
   
           const data = await fetchVideoById(videoId);
+          // @ts-ignore
           const videoMetadata = data?.video;
+          
   
           if (videoMetadata) {
             setVideoData(videoMetadata);
@@ -184,10 +186,10 @@ const TikTokDetailPage: React.FC = () => {
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Video Stats
             </h2>
-            <p>Likes: {videoData.diggCount ?? "N/A"}</p>
-            <p>Comments: {videoData.commentCount ?? "N/A"}</p>
-            <p>Shares: {videoData.shareCount ?? "N/A"}</p>
-            <p>Play Count: {videoData.playCount ?? "N/A"}</p>
+            <p>Likes: {videoData.stats?.diggCount ?? "N/A"}</p>
+            <p>Comments: {videoData.stats?.commentCount ?? "N/A"}</p>
+            <p>Shares: {videoData.stats?.shareCount ?? "N/A"}</p>
+            <p>Play Count: {videoData.stats?.playCount ?? "N/A"}</p>
 
             <h2 className="pt-4 text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
               Description
