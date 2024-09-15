@@ -12,33 +12,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOpenAIResponse = getOpenAIResponse;
+exports.getOpenAIResponse = void 0;
 const openai_1 = __importDefault(require("openai"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const openai = new openai_1.default({
     apiKey: process.env.OPENAI_API_KEY || '',
 });
-function getOpenAIResponse(userMessage) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c;
-        if (!openai.apiKey) {
-            throw new Error("OpenAI API key is missing. Please set OPENAI_API_KEY in the environment.");
+const getOpenAIResponse = (userMessage) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    if (!openai.apiKey) {
+        throw new Error("OpenAI API key is missing. Please set OPENAI_API_KEY in the environment.");
+    }
+    try {
+        const response = yield openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || '',
+            messages: [{ role: "user", content: userMessage }],
+        });
+        const botMessage = (_d = (_c = (_b = (_a = response.choices) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.message) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.trim();
+        if (!botMessage) {
+            throw new Error("OpenAI returned an empty response.");
         }
-        try {
-            const response = yield openai.chat.completions.create({
-                model: process.env.OPENAI_MODEL || '',
-                messages: [{ role: "user", content: userMessage }],
-            });
-            const botMessage = (_c = (_b = (_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message) === null || _b === void 0 ? void 0 : _b.content) === null || _c === void 0 ? void 0 : _c.trim();
-            if (!botMessage) {
-                throw new Error("No response from OpenAI.");
-            }
-            return botMessage;
-        }
-        catch (error) {
-            console.error("Error with OpenAI API request:", error);
-            throw new Error("Failed to fetch response from OpenAI.");
-        }
-    });
-}
+        return botMessage;
+    }
+    catch (error) {
+        console.error("OpenAI API request failed:", error.message || error);
+        throw new Error("Failed to fetch response from OpenAI.");
+    }
+});
+exports.getOpenAIResponse = getOpenAIResponse;

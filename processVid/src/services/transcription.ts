@@ -26,49 +26,46 @@ interface TranscriptionResponse {
 }
 
 export const transcribeVideoFromS3 = async (videoKey: string): Promise<TranscriptionResponse> => {
-    const fullKey = `${videoKey}.mp4`; 
-    const params = { Bucket: process.env.S3_BUCKET_NAME!, Key: fullKey };
-  
-    try {
-      const { Body } = await s3.send(new GetObjectCommand(params));
-      
-      if (!Body) {
-        throw new Error(`File with key "${fullKey}" not found in S3.`);
-      }
-  
-      const videoFilePath = `/tmp/${fullKey}`;
-      const mp3FilePath = `/tmp/${path.basename(fullKey, path.extname(fullKey))}.mp3`;
-      const streamBody = Body as SdkStreamMixin & Readable;
-  
-      const fileStream = fs.createWriteStream(videoFilePath);
-      streamBody.pipe(fileStream);
-      await new Promise((resolve, reject) => {
-        fileStream.on('close', resolve);
-        fileStream.on('error', reject);
-      });
-  
-      await execPromise(`ffmpeg -i ${videoFilePath} -q:a 0 -map a ${mp3FilePath}`);
-  
-      const transcription: TranscriptionResponse = await openai.audio.transcriptions.create({
-        file: fs.createReadStream(mp3FilePath),
-        model: 'whisper-1',
-        response_format: 'text',
-      });
-  
-  
-      if (fs.existsSync(videoFilePath)) {
-        fs.unlinkSync(videoFilePath);
-      }
-      
-      if (fs.existsSync(mp3FilePath)) {
-        fs.unlinkSync(mp3FilePath);
-      }
-  
-      return transcription;
-    } catch (error) {
-      console.error(`Error transcribing video with key "${fullKey}":`, error);
-      throw new Error('Transcription failed');
+  const fullKey = `${videoKey}.mp4`; 
+  const params = { Bucket: process.env.S3_BUCKET_NAME!, Key: fullKey };
+
+  try {
+    const { Body } = await s3.send(new GetObjectCommand(params));
+    
+    if (!Body) {
+      throw new Error(`File with key "${fullKey}" not found in S3.`);
     }
-  };
-  
-  
+
+    const videoFilePath = `/tmp/${fullKey}`;
+    const mp3FilePath = `/tmp/${path.basename(fullKey, path.extname(fullKey))}.mp3`;
+    const streamBody = Body as SdkStreamMixin & Readable;
+
+    const fileStream = fs.createWriteStream(videoFilePath);
+    streamBody.pipe(fileStream);
+    await new Promise((resolve, reject) => {
+      fileStream.on('close', resolve);
+      fileStream.on('error', reject);
+    });
+
+    await execPromise(`ffmpeg -i ${videoFilePath} -q:a 0 -map a ${mp3FilePath}`);
+
+    const transcription: TranscriptionResponse = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(mp3FilePath),
+      model: 'whisper-1',
+      response_format: 'text',
+    });
+
+    if (fs.existsSync(videoFilePath)) {
+      fs.unlinkSync(videoFilePath);
+    }
+    
+    if (fs.existsSync(mp3FilePath)) {
+      fs.unlinkSync(mp3FilePath);
+    }
+
+    return transcription;
+  } catch (error) {
+    console.error(`Error transcribing video with key "${fullKey}":`, error);
+    throw new Error('Transcription failed');
+  }
+};

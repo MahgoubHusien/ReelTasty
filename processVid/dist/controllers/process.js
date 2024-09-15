@@ -12,41 +12,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+exports.processVideo = exports.processHashtag = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const aws_sdk_1 = __importDefault(require("aws-sdk"));
+const client_s3_1 = require("@aws-sdk/client-s3");
 const tikapi_1 = __importDefault(require("tikapi"));
-const cors_1 = __importDefault(require("cors"));
 const pg_1 = require("pg");
 dotenv_1.default.config();
-const app = (0, express_1.default)();
-app.use((0, cors_1.default)({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
-}));
-const port = process.env.PORT || 3000;
 const api = (0, tikapi_1.default)(process.env.TIKAPI_KEY);
-const s3 = new aws_sdk_1.default.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION,
+const s3 = new client_s3_1.S3Client({
+    credentials: {
+        accessKeyId: process.env.ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.SECRET_ACCESS_KEY || '',
+    },
+    region: process.env.REGION || '',
 });
 const pool = new pg_1.Pool({
     connectionString: process.env.DATABASE_URL,
 });
-// List of hashtags to fetch
-const hashtags = [
-    "food",
-    "cooking",
-    "foodtok",
-    "recipesoftiktok",
-    "baking",
-    "healthyfood",
-    "tiktokfood"
-];
-const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
 const storeVideoMetadataInDB = (videoMetadata) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -90,8 +74,9 @@ const uploadVideoToS3 = (filePath, videoId) => __awaiter(void 0, void 0, void 0,
             Body: fileContent,
             ContentType: 'video/mp4',
         };
-        const uploadResult = yield s3.upload(s3Params).promise();
-        return uploadResult.Location;
+        const command = new client_s3_1.PutObjectCommand(s3Params);
+        const uploadResult = yield s3.send(command);
+        return `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
     }
     catch (err) {
         console.error('Error uploading video to S3:', err);
@@ -111,9 +96,6 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
             const videos = ((_a = response === null || response === void 0 ? void 0 : response.json) === null || _a === void 0 ? void 0 : _a.itemList) || [];
             for (const item of videos) {
                 const description = item.desc.toLowerCase();
-                if (excludedKeywords.some(keyword => description.includes(keyword))) {
-                    continue;
-                }
                 const videoMetadata = {
                     videoId: item.id,
                     author: item.author.nickname,
@@ -151,17 +133,45 @@ const processHashtag = (hashtag) => __awaiter(void 0, void 0, void 0, function* 
         console.error(`Error processing hashtag videos for: ${hashtag}`, err);
     }
 });
-app.get('/fetchHashtagVideos', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.processHashtag = processHashtag;
+const processVideo = (videoId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        for (const hashtag of hashtags) {
-            yield processHashtag(hashtag);
+        const videoResponse = yield api.public.video({ id: videoId });
+        if (!(videoResponse === null || videoResponse === void 0 ? void 0 : videoResponse.json)) {
+            throw new Error('No video data received from TikAPI.');
         }
-        res.status(200).json({ message: 'Hashtag videos fetched and processed successfully.' });
+        const item = videoResponse.json.itemInfo.itemStruct;
+        const description = item.desc.toLowerCase();
+        const videoMetadata = {
+            videoId: item.id,
+            author: item.author.nickname,
+            description: item.desc,
+            hashtags: ((_a = item.challengeInfoList) === null || _a === void 0 ? void 0 : _a.map((challenge) => challenge.challengeName).join(', ')) || '',
+            s3Url: '',
+            avatarLargeUrl: item.author.avatarLarger,
+            stats: {
+                playCount: item.stats.playCount,
+                shareCount: item.stats.shareCount,
+                commentCount: item.stats.commentCount,
+                diggCount: item.stats.diggCount,
+            },
+        };
+        const downloadAddr = item.video.downloadAddr;
+        const filePath = path_1.default.join('/tmp', `${videoMetadata.videoId}.mp4`);
+        if (videoResponse.saveVideo) {
+            yield videoResponse.saveVideo(downloadAddr, filePath);
+            videoMetadata.s3Url = yield uploadVideoToS3(filePath, videoMetadata.videoId);
+            yield storeVideoMetadataInDB(videoMetadata);
+            if (fs_1.default.existsSync(filePath)) {
+                fs_1.default.unlinkSync(filePath);
+            }
+            return videoMetadata;
+        }
     }
-    catch (err) {
-        console.error('Error fetching hashtag videos:', err);
-        res.status(500).json({ error: 'Error fetching hashtag videos' });
+    catch (error) {
+        console.error(`Error processing video with ID ${videoId}:`, error);
+        throw new Error(`Error processing video with ID ${videoId}`);
     }
-}));
-app.listen(port, () => {
 });
+exports.processVideo = processVideo;

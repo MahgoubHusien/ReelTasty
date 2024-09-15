@@ -16,8 +16,17 @@ var builder = WebApplication.CreateBuilder(args);
 DotEnv.Load();
 
 // Get the JWT secret key from the environment variables
-string secret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+string encodedSecret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
     ?? throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
+
+// Decode the Base64-encoded JWT secret key
+byte[] secretBytes = Convert.FromBase64String(encodedSecret);
+string decodedSecret = Encoding.UTF8.GetString(secretBytes);
+
+if (string.IsNullOrEmpty(decodedSecret))
+{
+    throw new InvalidOperationException("The decoded JWT secret key is invalid or empty.");
+}
 
 // Set up CORS
 builder.Services.AddCors(options =>
@@ -25,7 +34,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowSpecificOrigin",
         builder =>
         {
-            builder.WithOrigins("http://localhost:3000", "https://your-production-url.com") // Add your production URL here
+            builder.WithOrigins(Environment.GetEnvironmentVariable("FRONTEND_URL")) 
                    .AllowAnyHeader()
                    .AllowAnyMethod()
                    .AllowCredentials(); 
@@ -46,14 +55,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var smtpSettings = new SmtpSettings
 {
     Server = Environment.GetEnvironmentVariable("SERVER"),
-    Port = int.Parse(Environment.GetEnvironmentVariable("PORT")),
+    Port = int.Parse(Environment.GetEnvironmentVariable("SPORT")),
     SenderName = Environment.GetEnvironmentVariable("SENDERNAME"),
     SenderEmail = Environment.GetEnvironmentVariable("SENDEREMAIL"),
     Username = Environment.GetEnvironmentVariable("USERNAME"),
     Password = Environment.GetEnvironmentVariable("PASSWORD"),
     UseSsl = bool.Parse(Environment.GetEnvironmentVariable("USESSL"))
 };
-
 
 builder.Services.AddSingleton(smtpSettings);
 
@@ -101,7 +109,7 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
             ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(decodedSecret))
         };
     });
 
@@ -130,6 +138,10 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Set the application to listen on a specific port
+string port = Environment.GetEnvironmentVariable("PORT");
+app.Urls.Add($"http://*:{port}");
+
 // app.UseHttpsRedirection();
 
 app.UseRouting();
@@ -141,8 +153,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/", () => "Welcome to the root directory");
+
 app.Run();
-
-
- 
-    

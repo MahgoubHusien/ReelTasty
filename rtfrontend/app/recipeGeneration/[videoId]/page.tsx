@@ -25,7 +25,7 @@ const VideoDetailPage: React.FC = () => {
 
   const fetchProcessedVideo = async (videoId: string) => {
     try {
-      const res = await fetch(`http://localhost:8080/processVideo/${videoId}`);
+      const res = await fetch(`${process.env.PV}/processVideo/${videoId}`);
       if (!res.ok) {
         throw new Error("Failed to process video");
       }
@@ -103,7 +103,6 @@ const VideoDetailPage: React.FC = () => {
         } catch (err: any) {
           console.error("Error occurred during fetchData:", err);
           
-          // Safely access the error message
           const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
           setError(errorMessage);
         } finally {

@@ -2,19 +2,20 @@ import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import TikAPI from 'tikapi';
-import cors from 'cors';
 import { Pool } from 'pg';
 
 dotenv.config();
 
 const api = TikAPI(process.env.TIKAPI_KEY);
 
-const s3 = new AWS.S3({
-  accessKeyId: process.env.ACCESS_KEY_ID,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY,
-  region: process.env.REGION,
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.SECRET_ACCESS_KEY || '',
+  },
+  region: process.env.REGION || '',
 });
 
 const pool = new Pool({
@@ -35,9 +36,6 @@ interface VideoMetadata {
     diggCount: number;
   };
 }
-
-
-//const excludedKeywords = ['pork', 'bacon', 'ham', 'alcohol', 'wine', 'beer', 'whiskey', 'vodka'];
 
 const storeVideoMetadataInDB = async (videoMetadata: VideoMetadata) => {
   try {
@@ -90,9 +88,10 @@ const uploadVideoToS3 = async (filePath: string, videoId: string): Promise<strin
       ContentType: 'video/mp4',
     };
 
-    const uploadResult = await s3.upload(s3Params).promise();
+    const command = new PutObjectCommand(s3Params);
+    const uploadResult = await s3.send(command);
 
-    return uploadResult.Location;
+    return `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
   } catch (err) {
     console.error('Error uploading video to S3:', err);
     throw err;
@@ -115,7 +114,6 @@ export const processHashtag = async (hashtag: string) => {
 
       for (const item of videos) {
         const description = item.desc.toLowerCase();
-
 
         const videoMetadata: VideoMetadata = {
           videoId: item.id,
@@ -158,7 +156,6 @@ export const processHashtag = async (hashtag: string) => {
   }
 };
 
-
 export const processVideo = async (videoId: string) => {
   try {
     const videoResponse = await api.public.video({ id: videoId });
@@ -192,7 +189,6 @@ export const processVideo = async (videoId: string) => {
       await videoResponse.saveVideo(downloadAddr, filePath);
 
       videoMetadata.s3Url = await uploadVideoToS3(filePath, videoMetadata.videoId);
-      
       await storeVideoMetadataInDB(videoMetadata);
 
       if (fs.existsSync(filePath)) {
@@ -206,4 +202,3 @@ export const processVideo = async (videoId: string) => {
     throw new Error(`Error processing video with ID ${videoId}`);
   }
 };
-

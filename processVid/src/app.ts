@@ -3,23 +3,24 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { getOpenAIResponse } from "./services/openai";
 import { transcribeVideoFromS3 } from "./services/transcription";
-import { processVideo } from "./controllers/process" 
-import { processHashtag } from "./controllers/process" 
+import { processVideo, processHashtag } from "./controllers/process";
 
 dotenv.config();
 
 const app = express();
+
 app.use(cors({
-  origin: 'http://localhost:3000', 
+  origin: process.env.FRONTEND_URL, 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 app.use(express.json());
 
-const port = process.env.PORT;
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Welcome to the Video Processing and Chat API!" });
+});
 
 app.post("/api/chat", async (req, res) => {
-  const { message, userId, videoId } = req.body;
-
+  const { message, videoId } = req.body;
 
   if (!message || !videoId) {
     return res.status(400).json({ error: "Message and Video ID are required" });
@@ -27,7 +28,6 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     const botResponse = await getOpenAIResponse(message);
-
     return res.status(200).json({ botMessage: botResponse });
   } catch (error) {
     console.error('Error getting response from OpenAI:', error);
@@ -51,11 +51,8 @@ app.post("/api/transcribe", async (req, res) => {
   }
 });
 
-// Define an API route for processing a specific video
 app.get('/processVideo/:videoId', async (req, res) => {
-
   const { videoId } = req.params;
-
 
   if (!videoId) {
     return res.status(400).json({ error: "Missing videoId parameter." });
@@ -80,12 +77,9 @@ const hashtags = [
   "tiktokfood"
 ];
 
-
 app.get('/fetchHashtagVideos', async (req, res) => {
   try {
-    for (const hashtag of hashtags) {
-      await processHashtag(hashtag);
-    }
+    await Promise.all(hashtags.map(hashtag => processHashtag(hashtag)));
     res.status(200).json({ message: 'Hashtag videos fetched and processed successfully.' });
   } catch (err) {
     console.error('Error fetching hashtag videos:', err);
@@ -93,5 +87,11 @@ app.get('/fetchHashtagVideos', async (req, res) => {
   }
 });
 
+app.use((req, res) => {
+  res.status(404).json({ error: "Not Found" });
+});
 
-app.listen(port, () => {});
+const port = process.env.PORT;
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
