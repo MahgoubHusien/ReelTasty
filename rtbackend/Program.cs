@@ -32,12 +32,22 @@ if (string.IsNullOrEmpty(decodedSecret))
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
-        builder =>
+        corsBuilder =>
         {
-            builder.WithOrigins(Environment.GetEnvironmentVariable("FRONTEND_URL")) 
-                   .AllowAnyHeader()
-                   .AllowAnyMethod()
-                   .AllowCredentials(); 
+            var frontendUrl1 = Environment.GetEnvironmentVariable("FRONTEND_URL");
+            var frontendUrl2 = Environment.GetEnvironmentVariable("FRONTEND_URL2");
+
+            if (!string.IsNullOrEmpty(frontendUrl1) || !string.IsNullOrEmpty(frontendUrl2))
+            {
+                corsBuilder.WithOrigins(frontendUrl1, frontendUrl2)
+                           .AllowAnyHeader()
+                           .AllowAnyMethod()
+                           .AllowCredentials();
+            }
+            else
+            {
+                throw new Exception("CORS origin URLs are not set in the environment variables.");
+            }
         });
 });
 
@@ -146,10 +156,32 @@ app.Urls.Add($"http://*:{port}");
 
 app.UseRouting();
 
+// Handle CORS and OPTIONS preflight requests
 app.UseCors("AllowSpecificOrigin");
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Add("Access-Control-Allow-Origin", new[] { Environment.GetEnvironmentVariable("FRONTEND_URL") });
+        context.Response.Headers.Add("Access-Control-Allow-Methods", new[] { "POST", "OPTIONS", "GET", "PUT", "DELETE" });
+        context.Response.Headers.Add("Access-Control-Allow-Headers", new[] { "Content-Type", "Authorization" });
+        context.Response.StatusCode = 200;
+        await context.Response.CompleteAsync();
+    }
+    else
+    {
+        await next();
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+});
 
 app.MapControllers();
 

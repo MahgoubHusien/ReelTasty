@@ -142,3 +142,13 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Release/net8.0/rtbackend.pdb
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Release/net8.0/rtbackend.genruntimeconfig.cache
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/obj/Release/net8.0/ref/rtbackend.dll
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/appsettings.Development.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/web.config
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/rtbackend.deps.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/rtbackend.runtimeconfig.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/publish/web.config
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/publish/appsettings.Development.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/publish/rtbackend.deps.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Release/net8.0/publish/publish/rtbackend.runtimeconfig.json

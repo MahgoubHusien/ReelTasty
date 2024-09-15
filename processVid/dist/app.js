@@ -92,7 +92,7 @@ app.get('/fetchHashtagVideos', (req, res) => __awaiter(void 0, void 0, void 0, f
 app.use((req, res) => {
     res.status(404).json({ error: "Not Found" });
 });
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
