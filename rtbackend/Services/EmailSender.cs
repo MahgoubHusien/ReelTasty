@@ -26,7 +26,7 @@ namespace rtbackend.Services
         public async Task SendEmailAsync(string email, string subject, string message)
         {
             var server = Environment.GetEnvironmentVariable("SERVER") ?? _configuration["SmtpSettings:Server"];
-            var portString = Environment.GetEnvironmentVariable("PORT") ?? _configuration["SmtpSettings:Port"];
+            var portString = Environment.GetEnvironmentVariable("SPORT") ?? _configuration["SmtpSettings:Port"];
             var senderName = Environment.GetEnvironmentVariable("SENDERNAME") ?? _configuration["SmtpSettings:SenderName"];
             var senderEmail = Environment.GetEnvironmentVariable("SENDEREMAIL") ?? _configuration["SmtpSettings:SenderEmail"];
             var username = Environment.GetEnvironmentVariable("USERNAME") ?? _configuration["SmtpSettings:Username"];

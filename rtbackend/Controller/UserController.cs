@@ -361,7 +361,7 @@ namespace rtbackend.Controllers
             return Ok(new { token = newJwtToken, refreshToken = newRefreshToken });
         }
 
-        private string GenerateJwtToken(User user)
+       private string GenerateJwtToken(User user)
         {
             var claims = new[]
             {
@@ -371,18 +371,30 @@ namespace rtbackend.Controllers
                 new Claim(ClaimTypes.Name, user.UserName) 
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSecretKey));
+            byte[] secretBytes;
+            try
+            {
+                secretBytes = Convert.FromBase64String(_jwtSecretKey);
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Error: JWT_SECRET_KEY is not a valid base64-encoded string. Treating as plain text...");
+                secretBytes = Encoding.UTF8.GetBytes(_jwtSecretKey);
+            }
+
+            var key = new SymmetricSecurityKey(secretBytes);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _jwtIssuer,
                 audience: _jwtAudience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(60),
+                expires: DateTime.Now.AddMinutes(60), 
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
 
         private string GenerateRefreshToken()
         {

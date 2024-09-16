@@ -125,10 +125,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = "home" }) => {
         {isLoggedIn ? (
           <div className="relative inline-block">
             <div
-              className="px-4 py-2 rounded-lg border-2 cursor-pointer flex items-center justify-center shadow-md"
+              className="px-4 py-2 rounded-lg border-2 cursor-pointer flex items-center justify-center shadow-md bg-white dark:bg-gray-800"
               style={{
                 borderColor: "#CBACF9",
-                backgroundColor: "white",
               }}
               onClick={toggleDropdown}
             >

@@ -9,10 +9,21 @@ dotenv.config();
 
 const app = express();
 
+const allowedOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URL2];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL, 
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
 }));
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -43,7 +54,7 @@ app.post("/api/transcribe", async (req, res) => {
   }
 
   try {
-    const transcription = await transcribeVideoFromS3(videoId); 
+    const transcription = await transcribeVideoFromS3(videoId);
     return res.status(200).json({ transcription });
   } catch (error) {
     console.error("Error transcribing video:", error);

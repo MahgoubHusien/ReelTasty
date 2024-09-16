@@ -142,7 +142,6 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/Newtonsoft.Json.dll
-/Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/publish/web.config
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/publish/appsettings.Development.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/publish/appsettings.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/bin/Debug/net8.0/publish/rtbackend.deps.json

@@ -20,9 +20,20 @@ const transcription_1 = require("./services/transcription");
 const process_1 = require("./controllers/process");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+const allowedOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URL2];
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
 }));
 app.use(express_1.default.json());
 app.get("/", (req, res) => {
