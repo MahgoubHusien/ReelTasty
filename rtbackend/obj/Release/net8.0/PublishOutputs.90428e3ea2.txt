@@ -1,4 +1,7 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/rtbackend
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/publish/web.config
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/web.config
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/web.config
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/web.config
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/web.config
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/appsettings.Development.json
@@ -7,6 +10,18 @@
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/appsettings.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/appsettings.Development.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/appsettings.Development.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/appsettings.Development.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/publish/appsettings.Development.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/publish/appsettings.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/publish/rtbackend.deps.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/publish/rtbackend.runtimeconfig.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/rtbackend.deps.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/publish/rtbackend.runtimeconfig.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/rtbackend.deps.json
+/Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/publish/rtbackend.runtimeconfig.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/rtbackend.deps.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/publish/rtbackend.runtimeconfig.json
 /Users/mahgoubhusien/Documents/reeltasty/rtbackend/publish/publish/rtbackend.deps.json

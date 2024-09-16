@@ -16,19 +16,27 @@ var builder = WebApplication.CreateBuilder(args);
 DotEnv.Load();
 
 // Get the JWT secret key from the environment variables
-string encodedSecret = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+string secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
     ?? throw new InvalidOperationException("JWT_SECRET_KEY is not set in the environment variables.");
 
-// Decode the Base64-encoded JWT secret key
-byte[] secretBytes = Convert.FromBase64String(encodedSecret);
-string decodedSecret = Encoding.UTF8.GetString(secretBytes);
-
-if (string.IsNullOrEmpty(decodedSecret))
+// Decode the base64-encoded secret key
+byte[] secretBytes;
+try
 {
-    throw new InvalidOperationException("The decoded JWT secret key is invalid or empty.");
+    secretBytes = Convert.FromBase64String(secretKey);
+}
+catch (FormatException)
+{
+    // If decoding fails, treat the secret key as plain text
+    secretBytes = Encoding.UTF8.GetBytes(secretKey);
 }
 
-// Set up CORS
+if (secretBytes.Length == 0)
+{
+    throw new InvalidOperationException("The JWT secret key is invalid or empty.");
+}
+
+// Set up CORS policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigin",
@@ -42,7 +50,7 @@ builder.Services.AddCors(options =>
                 corsBuilder.WithOrigins(frontendUrl1, frontendUrl2)
                            .AllowAnyHeader()
                            .AllowAnyMethod()
-                           .AllowCredentials();
+                           .AllowCredentials();  // This allows sending credentials (cookies, authorization headers).
             }
             else
             {
@@ -51,7 +59,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Add services to the container
+// Connection string setup for PostgreSQL
 var connectionString = $"Host={Environment.GetEnvironmentVariable("DB_HOST")};" +
                       $"Port={Environment.GetEnvironmentVariable("DB_PORT")};" +
                       $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
@@ -89,6 +97,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     );
 });
 
+// Identity configuration
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -102,8 +111,7 @@ builder.Services.AddIdentity<User, IdentityRole>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddTransient<IEmailSender, EmailSender>();
-
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -119,13 +127,13 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER"),
             ValidAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE"),
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(decodedSecret))
+            IssuerSigningKey = new SymmetricSecurityKey(secretBytes)
         };
     });
 
 builder.Services.AddAuthorization();
 
-// Register TikApi service with required dependencies
+// Register TikApi service
 builder.Services.AddScoped<TikApi>();
 
 // Add Controllers and Swagger
@@ -152,32 +160,19 @@ if (app.Environment.IsDevelopment())
 string port = Environment.GetEnvironmentVariable("PORT");
 app.Urls.Add($"http://*:{port}");
 
+// Uncomment HTTPS redirection if using HTTPS in production
 // app.UseHttpsRedirection();
 
 app.UseRouting();
 
-// Handle CORS and OPTIONS preflight requests
+// Handle CORS
 app.UseCors("AllowSpecificOrigin");
 
-app.Use(async (context, next) =>
-{
-    if (context.Request.Method == "OPTIONS")
-    {
-        context.Response.Headers.Add("Access-Control-Allow-Origin", new[] { Environment.GetEnvironmentVariable("FRONTEND_URL") });
-        context.Response.Headers.Add("Access-Control-Allow-Methods", new[] { "POST", "OPTIONS", "GET", "PUT", "DELETE" });
-        context.Response.Headers.Add("Access-Control-Allow-Headers", new[] { "Content-Type", "Authorization" });
-        context.Response.StatusCode = 200;
-        await context.Response.CompleteAsync();
-    }
-    else
-    {
-        await next();
-    }
-});
-
+// Authentication and Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map Endpoints
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();

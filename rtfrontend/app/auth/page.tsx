@@ -77,6 +77,35 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      const checkAuth = async () => {
+        const profileEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/User/Profile`;
+        try {
+          const response = await fetch(profileEndpoint, {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`, 
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            router.push("/recipeGeneration");
+          } else {
+            localStorage.removeItem("authToken");
+          }
+        } catch (error) {
+          console.error("Failed to fetch profile:", error);
+          localStorage.removeItem("authToken");
+        }
+      };
+
+      checkAuth();
+    }
+  }, [router]);
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       <div className="flex w-full md:w-1/2 bg-[#121212] text-white items-center justify-center">
