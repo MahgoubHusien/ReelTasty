@@ -25,7 +25,7 @@ const VideoDetailPage: React.FC = () => {
 
   const fetchProcessedVideo = async (videoId: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}processVideo/${videoId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_NODE_API_BASE_URL}/processVideo/${videoId}`);
       if (!res.ok) {
         throw new Error("Failed to process video");
       }
