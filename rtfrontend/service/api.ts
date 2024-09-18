@@ -175,7 +175,6 @@ const isGuid = (value: string): boolean => {
 export const fetchVideoById = async (videoId: string): Promise<VideoMetaData | null> => {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/Video?videoId=${encodeURIComponent(videoId)}`);
-        console.log("Response", response)
         if (response.status === 404) {
             console.warn(`Video with ID: ${videoId} not found.`);
             return null;  
@@ -186,7 +185,6 @@ export const fetchVideoById = async (videoId: string): Promise<VideoMetaData | n
         }
 
         const data = await response.json();
-        console.log(data)
         return data as VideoMetaData;
     } catch (error) {
         console.error("Error fetching video by ID:", error);
@@ -421,7 +419,6 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         VideoMetaData: videoMetaData
     };
 
-    console.log("JSON data being sent:", JSON.stringify(jsonData, null, 2)); 
 
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/TikAPI/SubmitTikTokLink`, {
@@ -434,7 +431,6 @@ export const submitTikTokLink = async (tiktokLink: string, videoMetaData: VideoM
         });
 
         const responseData = await response.json(); 
-        console.log("Response JSON:", responseData);
 
         if (!response.ok) {
             console.error('Error response from server:', responseData);
@@ -473,7 +469,6 @@ export const fetchSubmittedVideos = async (): Promise<TikTokLinkSubmissionWithMe
       }
   
       const data = await response.json();
-      console.log("Fetched submitted videos with metadata:", data);
       return data as TikTokLinkSubmissionWithMetadata[];
     } catch (error) {
       console.error("Error fetching submitted videos:", error);
@@ -487,19 +482,15 @@ try {
         method: 'GET',
     });
 
-    console.log("Raw response:", response);
 
     if (response.ok) {
         const contentType = response.headers.get('Content-Type');
-        console.log("Content-Type:", contentType);
 
         if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
-            console.log("Parsed JSON data:", data);
             return data.transcription_text || null;
         } else {
             const textData = await response.text();
-            console.log("Non-JSON response:", textData);
             return textData; 
         }
     }
@@ -514,18 +505,15 @@ try {
         });
 
         const transcribeText = await transcribeResponse.text();
-        console.log("Transcribe response (raw text):", transcribeText);
 
         try {
             const transcribeData = JSON.parse(transcribeText);
-            console.log("Transcribe data (parsed JSON):", transcribeData);
 
             const transcriptionText = transcribeData.transcription|| null;
 
             if (transcriptionText) {
                 const saveSuccess = await saveTranscription(videoId, transcriptionText);
                 if (saveSuccess) {
-                    console.log("Transcription saved successfully.");
                     return transcriptionText;
                 } else {
                     console.error("Failed to save the transcription.");
@@ -561,14 +549,11 @@ export const saveTranscription = async (videoId: string, transcriptionText: stri
         }),
       });
   
-      console.log(`Save transcription response status: ${response.status}`);
       
       if (response.ok) {
-        console.log(`Transcription for videoId ${videoId} saved successfully.`);
         return true;  
       } else {
         const contentType = response.headers.get('Content-Type');
-        console.log("Response Content-Type:", contentType);
   
         if (contentType && contentType.includes('application/json')) {
           const errorResponse = await response.json();

@@ -75,7 +75,6 @@ async function insertVideoMetadata(item: TikTokVideoItem, s3Url: string) {
     const checkResult = await pool.query(checkQuery, [item.id]);
 
     if (checkResult.rowCount ?? 0 > 0) {
-        console.log(`Video with ID ${item.id} already exists, skipping insert.`);
         return;
     }
 
@@ -119,7 +118,6 @@ async function insertVideoMetadata(item: TikTokVideoItem, s3Url: string) {
         new Date(item.createTime * 1000).toISOString(),
     ];
     await pool.query(query, values);
-    console.log(`Inserted video metadata for video ID: ${item.id}`);
 }
 
 
@@ -137,7 +135,6 @@ async function fetchVideosByHashtag(hashtagName: string) {
             return;
         }
 
-        console.log(`Hashtag ID for ${hashtagName}: ${hashtagInfo.id}`);
 
         let cursor: string | undefined;
         let hasMore = true;
@@ -149,12 +146,10 @@ async function fetchVideosByHashtag(hashtagName: string) {
                 cursor: cursor,
             });
 
-            console.log(`Response structure for ${hashtagName}:`, JSON.stringify(response.json, null, 2));
 
             const items = response.json?.itemList || response.json?.itemStruct || []; 
 
             if (items.length === 0) {
-                console.log(`No items found for this hashtag: ${hashtagName}.`);
                 break;
             }
 
@@ -163,18 +158,15 @@ async function fetchVideosByHashtag(hashtagName: string) {
                 const containsExcludedKeyword = excludedKeywords.some(keyword => description.includes(keyword));
 
                 if (containsExcludedKeyword) {
-                    console.log(`Skipping video ${item.id} due to excluded content.`);
                     continue;
                 }
 
                 const downloadAddr = item.video?.playAddr;
 
                 if (!downloadAddr) {
-                    console.log(`Skipping video ${item.id} due to missing download address.`);
                     continue;
                 }
 
-                console.log(`Downloading video from ${downloadAddr}`);
 
                 const fileName = `${item.id}.mp4`;
                 const filePath = path.join('/tmp', fileName);
@@ -187,7 +179,6 @@ async function fetchVideosByHashtag(hashtagName: string) {
                     await insertVideoMetadata(item, s3Url);
 
                     fs.unlinkSync(filePath);
-                    console.log(`Successfully processed and saved video ${item.id}`);
                 } else {
                     console.warn("saveVideo method is undefined");
                 }
@@ -212,7 +203,6 @@ async function fetchVideosByHashtag(hashtagName: string) {
 
 (async () => {
     for (const hashtag of hashtags) {
-        console.log(`Processing hashtag: ${hashtag}`);
         await fetchVideosByHashtag(hashtag);
     }
 })();

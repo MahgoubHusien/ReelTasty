@@ -40,7 +40,6 @@ async function storeVideoMetadataInDB(videoMetadata: VideoMetadata) {
     );
 
     if (existingVideo.rowCount ?? 0 > 0) {
-      console.log(`Video with ID ${videoMetadata.videoId} already exists. Skipping insert.`);
       return;
     }
 
@@ -63,7 +62,6 @@ async function storeVideoMetadataInDB(videoMetadata: VideoMetadata) {
     ];
 
     await pool.query(query, values);
-    console.log(`Video metadata stored for video ID: ${videoMetadata.videoId}`);
   } catch (err) {
     console.error(`Error storing video metadata for video ID: ${videoMetadata.videoId}`, err);
   }
@@ -81,7 +79,6 @@ async function uploadVideoToS3(filePath: string, videoId: string): Promise<strin
   };
 
   const uploadResult = await s3.upload(s3Params).promise();
-  console.log(`Video uploaded to S3 with key: ${fileName}`);
 
   return uploadResult.Location;
 }
@@ -117,7 +114,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const item = response.json.itemInfo.itemStruct;
-    console.log(`Fetched metadata for video ID: ${videoId}`);
 
     const videoMetadata: VideoMetadata = {
       videoId: item.id,
@@ -138,14 +134,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const filePath = path.join('/tmp', `${videoId}.mp4`);
 
     await downloadVideo(downloadAddr, filePath);
-    console.log(`Video downloaded to: ${filePath}`);
 
     videoMetadata.s3Url = await uploadVideoToS3(filePath, videoId);
     await storeVideoMetadataInDB(videoMetadata);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
-      console.log(`Temporary file deleted: ${filePath}`);
     }
 
     res.status(200).json(videoMetadata);
