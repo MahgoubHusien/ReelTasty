@@ -68,7 +68,7 @@ const storeVideoMetadataInDB = async (videoMetadata: VideoMetadata) => {
 
     await pool.query(query, values);
   } catch (err) {
-    console.error('Error storing video metadata:', err);
+    console.error(`Error storing video metadata for ${videoMetadata.videoId}:`, err);
   }
 };
 
@@ -89,11 +89,12 @@ const uploadVideoToS3 = async (filePath: string, videoId: string): Promise<strin
     };
 
     const command = new PutObjectCommand(s3Params);
-    const uploadResult = await s3.send(command);
+    await s3.send(command);
 
-    return `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${fileName}`;
+    return s3Url;
   } catch (err) {
-    console.error('Error uploading video to S3:', err);
+    console.error(`Error uploading video ${videoId} to S3:`, err);
     throw err;
   }
 };
@@ -107,6 +108,7 @@ export const processHashtag = async (hashtag: string) => {
     }
 
     const hashtagId = response.json.challengeInfo.challenge.id;
+    
     response = await api.public.hashtag({ id: hashtagId });
 
     while (response) {
@@ -130,7 +132,7 @@ export const processHashtag = async (hashtag: string) => {
           },
         };
 
-        const downloadAddr = item.video.downloadAddr;
+        const downloadAddr = item.video.playAddr;  // Corrected field
         const filePath = path.join('/tmp', `${videoMetadata.videoId}.mp4`);
 
         if (response.saveVideo) {
@@ -152,20 +154,18 @@ export const processHashtag = async (hashtag: string) => {
       }
     }
   } catch (err) {
-    console.error(`Error processing hashtag videos for: ${hashtag}`, err);
+    console.error(`Error processing videos for hashtag ${hashtag}:`, err);
   }
 };
 
 export const processVideo = async (videoId: string) => {
   try {
     const videoResponse = await api.public.video({ id: videoId });
-
-    if (!videoResponse?.json) {
+    if (!videoResponse || !videoResponse.json) {
       throw new Error('No video data received from TikAPI.');
     }
 
     const item = videoResponse.json.itemInfo.itemStruct;
-    const description = item.desc.toLowerCase();
 
     const videoMetadata: VideoMetadata = {
       videoId: item.id,
@@ -182,7 +182,7 @@ export const processVideo = async (videoId: string) => {
       },
     };
 
-    const downloadAddr = item.video.downloadAddr;
+    const downloadAddr = item.video.playAddr; // Corrected field
     const filePath = path.join('/tmp', `${videoMetadata.videoId}.mp4`);
 
     if (videoResponse.saveVideo) {

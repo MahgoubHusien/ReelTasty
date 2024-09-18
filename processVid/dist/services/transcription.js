@@ -33,36 +33,49 @@ const openai = new openai_1.OpenAI({
 const transcribeVideoFromS3 = (videoKey) => __awaiter(void 0, void 0, void 0, function* () {
     const fullKey = `${videoKey}.mp4`;
     const params = { Bucket: process.env.S3_BUCKET_NAME, Key: fullKey };
+    console.log(`Starting transcription process for video: ${fullKey}`);
     try {
+        console.log(`Fetching video file from S3 bucket: ${process.env.S3_BUCKET_NAME}`);
         const { Body } = yield s3.send(new client_s3_1.GetObjectCommand(params));
         if (!Body) {
             throw new Error(`File with key "${fullKey}" not found in S3.`);
         }
         const videoFilePath = `/tmp/${fullKey}`;
         const mp3FilePath = `/tmp/${path_1.default.basename(fullKey, path_1.default.extname(fullKey))}.mp3`;
+        console.log(`Writing video file to local storage: ${videoFilePath}`);
         const streamBody = Body;
         const fileStream = fs_1.default.createWriteStream(videoFilePath);
         streamBody.pipe(fileStream);
         yield new Promise((resolve, reject) => {
             fileStream.on('close', resolve);
-            fileStream.on('error', reject);
+            fileStream.on('error', (err) => {
+                console.error(`Error writing video file to local storage: ${err}`);
+                reject(err);
+            });
         });
+        console.log(`Video file saved locally. Converting video to audio using ffmpeg...`);
         yield execPromise(`ffmpeg -i ${videoFilePath} -q:a 0 -map a ${mp3FilePath}`);
+        console.log(`Audio extracted and saved as MP3: ${mp3FilePath}`);
+        console.log(`Sending MP3 file to OpenAI for transcription...`);
         const transcription = yield openai.audio.transcriptions.create({
             file: fs_1.default.createReadStream(mp3FilePath),
             model: 'whisper-1',
             response_format: 'text',
         });
+        console.log('Transcription successful. Cleaning up local files...');
         if (fs_1.default.existsSync(videoFilePath)) {
+            console.log(`Deleting local video file: ${videoFilePath}`);
             fs_1.default.unlinkSync(videoFilePath);
         }
         if (fs_1.default.existsSync(mp3FilePath)) {
+            console.log(`Deleting local MP3 file: ${mp3FilePath}`);
             fs_1.default.unlinkSync(mp3FilePath);
         }
+        console.log('Transcription process completed successfully.');
         return transcription;
     }
     catch (error) {
-        console.error(`Error transcribing video with key "${fullKey}":`, error);
+        console.error(`Error during transcription process for video with key "${fullKey}":`, error);
         throw new Error('Transcription failed');
     }
 });

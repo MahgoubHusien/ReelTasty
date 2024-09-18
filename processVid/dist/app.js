@@ -69,7 +69,9 @@ app.post("/api/transcribe", (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 app.get('/processVideo/:videoId', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { videoId } = req.params;
+    console.log('Received videoId:', videoId);
     if (!videoId) {
+        console.log("Missing videoId parameter in request.");
         return res.status(400).json({ error: "Missing videoId parameter." });
     }
     try {
@@ -105,5 +107,4 @@ app.use((req, res) => {
 });
 const port = process.env.PORT;
 app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
 });

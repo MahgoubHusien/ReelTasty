@@ -29,6 +29,7 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
   const fullKey = `${videoKey}.mp4`; 
   const params = { Bucket: process.env.S3_BUCKET_NAME!, Key: fullKey };
 
+  
   try {
     const { Body } = await s3.send(new GetObjectCommand(params));
     
@@ -38,13 +39,18 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
 
     const videoFilePath = `/tmp/${fullKey}`;
     const mp3FilePath = `/tmp/${path.basename(fullKey, path.extname(fullKey))}.mp3`;
-    const streamBody = Body as SdkStreamMixin & Readable;
 
+    const streamBody = Body as SdkStreamMixin & Readable;
     const fileStream = fs.createWriteStream(videoFilePath);
+
     streamBody.pipe(fileStream);
+
     await new Promise((resolve, reject) => {
       fileStream.on('close', resolve);
-      fileStream.on('error', reject);
+      fileStream.on('error', (err) => {
+        console.error(`Error writing video file to local storage: ${err}`);
+        reject(err);
+      });
     });
 
     await execPromise(`ffmpeg -i ${videoFilePath} -q:a 0 -map a ${mp3FilePath}`);
@@ -54,6 +60,7 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
       model: 'whisper-1',
       response_format: 'text',
     });
+
 
     if (fs.existsSync(videoFilePath)) {
       fs.unlinkSync(videoFilePath);
@@ -65,7 +72,7 @@ export const transcribeVideoFromS3 = async (videoKey: string): Promise<Transcrip
 
     return transcription;
   } catch (error) {
-    console.error(`Error transcribing video with key "${fullKey}":`, error);
+    console.error(`Error during transcription process for video with key "${fullKey}":`, error);
     throw new Error('Transcription failed');
   }
 };
