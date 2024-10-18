@@ -6,7 +6,7 @@
 
 Welcome to **Reel Tasty** — a full-stack web application where users can submit TikTok videos, transcribe the audio, and generate recipes with the help of OpenAI's ChatGPT. Discover trending foods, save your favorite recipes, and get personalized cooking tips all in one place!
 
-Try it out! [www.reeltasty.com](#)
+Try it out! [www.reeltasty.com](https://www.reeltasty.com)
 
 ## 🚀 Features
 
