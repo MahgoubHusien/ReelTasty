@@ -1,7 +1,7 @@
 # 🍽️ Reel Tasty - Full-Stack Recipe Application
 
 <div align="center">
-  <img src="frontend/public/major.png" alt="Reel Tasty" width="500"/>
+  <img src="rtfrontend/public/reel-tasty-high-resolution-logo-white.png" alt="Reel Tasty" width="500"/>
 </div>
 
 Welcome to **Reel Tasty** — a full-stack web application where users can submit TikTok videos, transcribe the audio, and generate recipes with the help of OpenAI's ChatGPT. Discover trending foods, save your favorite recipes, and get personalized cooking tips all in one place!
